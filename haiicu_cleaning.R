@@ -5,12 +5,14 @@ library(data.table)
 
 setwd("C:/Users/dplachouras/OneDrive - European Centre for Disease Prevention and Control/Documents/HAINETICU_2023")
 
-#function definitions
+#function definitions --------
 prc<-function(x){return(100*round(x,digits=3))}
 pct<-function(x,tot){prc(sum(x,na.rm=TRUE)/tot)}
 unfactor<-function(x){as.numeric(as.character(x))}
 p25<-function(x){quantile(x,c(0.25),na.rm=TRUE)}
 p75<-function(x){quantile(x,c(0.75),na.rm=TRUE)}
+
+
 parse_mixed_date <- function(x) {
   x <- trimws(as.character(x))
   x[x == ""] <- NA_character_
@@ -22,6 +24,68 @@ parse_mixed_date <- function(x) {
   coalesce(d1, d2)
 }
 
+#top 10 microorganism by country tables function -----
+build_top10_country_tables <- function(df,
+                                       isolate_col = "Isolate",
+                                       total_col = "total",
+                                       totalpc_col = "totalpc",
+                                       country_name_lut = c(
+                                         AT = "Austria", BE = "Belgium", CZ = "Czech Republic",
+                                         DE = "Germany", EE = "Estonia", ES = "Spain",
+                                         FR = "France", HU = "Hungary", IT = "Italy",
+                                         LT = "Lithuania", LU = "Luxembourg", MT = "Malta",
+                                         PL = "Poland", PT = "Portugal", RO = "Romania",
+                                         SK = "Slovakia", UK = "United Kingdom",
+                                         "IT-SPIN-UTI" = "Italy-SPIN-UTI",
+                                         "IT-GiViTI" = "Italy-GiViTI",
+                                         ITSPINUTI = "Italy-SPIN-UTI",
+                                         ITGiViTI = "Italy-GiViTI"
+                                       )) {
+
+  # Numeric country count columns (exclude totals and percentage columns)
+  country_cols <- df %>%
+    dplyr::select(where(is.numeric), -dplyr::any_of(c(total_col, totalpc_col)), -dplyr::matches("pc$")) %>%
+    names()
+
+  # Percentage columns
+  country_pc_cols <- df %>%
+    dplyr::select(dplyr::matches("pc$"), -dplyr::any_of(totalpc_col)) %>%
+    names()
+
+  summary_tbl <- df %>%
+    dplyr::summarise(dplyr::across(dplyr::all_of(country_cols), ~ sum(.x, na.rm = TRUE))) %>%
+    dplyr::mutate(total = rowSums(dplyr::across(dplyr::all_of(country_cols)), na.rm = TRUE))
+
+  totals_tbl <- df %>%
+    dplyr::select(dplyr::all_of(country_cols), dplyr::any_of(total_col)) %>%
+    dplyr::summarise(dplyr::across(dplyr::everything(), ~ sum(.x, na.rm = TRUE), .names = "{.col}_sum"))
+
+  pc_tbl <- df %>%
+    dplyr::select(dplyr::all_of(isolate_col), dplyr::all_of(country_pc_cols), dplyr::any_of(totalpc_col)) %>%
+    dplyr::mutate(dplyr::across(-dplyr::all_of(isolate_col), ~ tidyr::replace_na(.x, 0)))
+
+  # Rename % columns to full country names
+  pc_keys <- sub("pc$", "", country_pc_cols)
+  display_names <- ifelse(
+    is.na(country_name_lut[pc_keys]),
+    pc_keys,
+    unname(country_name_lut[pc_keys])
+  )
+
+  names(pc_tbl) <- c(
+    isolate_col,
+    display_names,
+    if (totalpc_col %in% names(pc_tbl)) "total"
+  )
+
+  list(
+    summary = summary_tbl,
+    totals = totals_tbl,
+    pc = pc_tbl,
+    country_cols = country_cols,
+    country_pc_cols = country_pc_cols
+  )
+}
 
 #variable check
 unit<-fread("1.HAIICU.csv")
@@ -583,11 +647,12 @@ PNtable_group_top10<-mutate(PNtable_group_top10,UKpc=100*round(UK/sum(UK,na.rm=T
 PNtable_group_top10<-mutate(PNtable_group_top10,PLpc=100*round(PL/sum(PL,na.rm=TRUE),digits=3))
 PNtable_group_top10<-mutate(PNtable_group_top10,totalpc=100*round(total/sum(total,na.rm=TRUE),digits=3))
 
-summaryPNtable_top10<-PNtable_group_top10%>%summarise(across(AT:SK, ~ sum(.x, na.rm = TRUE)))
-summaryPNtable_top10$total<-rowSums(summaryPNtable_top10[,c(2:ncol(summaryPNtable_top10))])
-PNtable_group_top10_pc<-select(PNtable_group_top10,Isolate,ATpc:SKpc,totalpc)
-PNtable_group_top10_pc[is.na(PNtable_group_top10_pc)]<-0
-PNtable_group_totals<-PNtable_group_top10%>%select(AT:total)%>%summarise(across(everything(),list(sum=sum),na.rm=TRUE))
+
+pn_out <- build_top10_country_tables(PNtable_group_top10)
+
+summaryPNtable_top10 <- pn_out$summary
+PNtable_group_totals <- pn_out$totals
+PNtable_group_top10_pc <- pn_out$pc
 saveRDS(PNtable_group_top10_pc,file="PNtable_group_top10_pc.Rda")
 
 
@@ -925,13 +990,11 @@ BSItable_group_top10<-mutate(BSItable_group_top10,ESpc=100*round(ES/sum(ES,na.rm
 BSItable_group_top10<-mutate(BSItable_group_top10,UKpc=100*round(UK/sum(UK,na.rm=TRUE),digits=3))
 BSItable_group_top10<-mutate(BSItable_group_top10,totalpc=100*round(total/sum(total,na.rm=TRUE),digits=3))
 
-summaryBSItable_top10<-BSItable_group_top10%>%summarise(across(AT:PT, ~ sum(.x, na.rm = TRUE)))
-summaryBSItable_top10$total<-rowSums(summaryBSItable_top10[,c(1:9)],na.rm=TRUE)
-BSItable_group_totals<-BSItable_group_top10%>%select(AT:total)%>%summarise(across(everything(),list(sum=sum),na.rm=TRUE))
-BSItable_group_top10_pc<-select(BSItable_group_top10,Isolate,ATpc:ESpc,totalpc)
-BSItable_group_top10_pc[is.na(BSItable_group_top10_pc)]<-0
-#names(BSItable_group_top10_pc)<-c("Isolate","Belgium","Czech Republic","Estonia","France","Germany","Hungary","Italy","Lithuania","Malta","Poland", "United Kingdom","total")
-names(BSItable_group_top10_pc)<-c("Isolate","Austria","Estonia", "France","Germany","Italy-SPIN-UTI","Italy-GiViTI","Lithuania","Malta","Portugal","Slovakia","Spain","total")
+bsi_out <- build_top10_country_tables(BSItable_group_top10)
+
+summaryBSItable_top10 <- bsi_out$summary
+BSItable_group_totals <- bsi_out$totals
+BSItable_group_top10_pc <- bsi_out$pc
 saveRDS(BSItable_group_top10_pc,file="BSItable_group_top10_pc.Rda")
 
 
@@ -1090,15 +1153,11 @@ UTItable_group_top10<-mutate(UTItable_group_top10,PLpc=100*round(PL/sum(PL,na.rm
 UTItable_group_top10<-mutate(UTItable_group_top10,totalpc=100*round(total/sum(total,na.rm=TRUE),digits=3))
 
 
-summaryUTItable_top10<-summarise_each(UTItable_group_top10,funs(sum(.,na.rm=TRUE)), AT:SK)
-summaryUTItable_top10$total<-rowSums(summaryUTItable_top10[,c(1:9)])
-UTItable_group_top10_pc<-select(UTItable_group_top10,Isolate,ATpc:ESpc,totalpc)
-#names(UTItable_group_top10_pc)<-c("Isolate","Estonia","Spain","Italy","Lithuania","Luxembourg","Portugal","Romania","Slovakia","Germany","Hungary","total")
-names(UTItable_group_top10_pc)<-c("Isolate","Austria","Estonia","Germany", "Italy-SPIN-UTI","Italy-GiViTI","Lithuania","Portugal","Slovakia","Spain","total")
+uti_out <- build_top10_country_tables(UTItable_group_top10)
 
-UTItable_group_top10_pc[is.na(UTItable_group_top10_pc)]<-0
-UTItable_group_top10_pc<-UTItable_group_top10_pc[,c(names(UTItable_group_top10_pc[1]),sort(names(UTItable_group_top10_pc[2:(ncol(UTItable_group_top10_pc)-1)])),names(UTItable_group_top10_pc[ncol(UTItable_group_top10_pc)]))]
-UTItable_group_totals<-UTItable_group_top10%>%select(AT:total)%>%summarise(across(everything(),list(sum=sum),na.rm=TRUE))
+summaryUTItable_top10 <- uti_out$summary
+UTItable_group_totals <- uti_out$totals
+UTItable_group_top10_pc <- uti_out$pc
 saveRDS(UTItable_group_top10_pc,file="UTItable_group_top10_pc.Rda")
 
 microlight[,'RecordId'] <- as.factor(as.character(microlight[,'RecordId']))
