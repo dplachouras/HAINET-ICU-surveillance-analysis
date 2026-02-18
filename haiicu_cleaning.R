@@ -11,6 +11,17 @@ pct<-function(x,tot){prc(sum(x,na.rm=TRUE)/tot)}
 unfactor<-function(x){as.numeric(as.character(x))}
 p25<-function(x){quantile(x,c(0.25),na.rm=TRUE)}
 p75<-function(x){quantile(x,c(0.75),na.rm=TRUE)}
+parse_mixed_date <- function(x) {
+  x <- trimws(as.character(x))
+  x[x == ""] <- NA_character_
+  
+  # Try ISO first, then dd/mm/yyyy
+  d1 <- as.Date(x, format = "%Y-%m-%d")
+  d2 <- as.Date(x, format = "%d/%m/%Y")
+  
+  coalesce(d1, d2)
+}
+
 
 #variable check
 unit<-fread("1.HAIICU.csv")
@@ -71,8 +82,10 @@ haiicu_level1_all$HospitalIdGlobal<-as.factor(paste(ReportingCountry,HospitalId,
 save (haiicu_level1_all, file="haiicu_level1_all.Rda")
 #haiicu_level2 cleaning -- patient level data -------
 haiicu_pt<-read.csv("2.HAIICU$PT.csv") #load 2.HAIICU$Pt
-haiicu_pt$DateUnitAdmission<-as.Date(haiicu_pt$DateUnitAdmission,format="%Y-%m-%d")
-haiicu_pt$DateUnitDischarge<-as.Date(haiicu_pt$DateUnitDischarge,format="%Y-%m-%d")
+
+haiicu_pt<-haiicu_pt%>%mutate(across(c(DateUnitAdmission, DateUnitDischarge), parse_mixed_date))
+#haiicu_pt$DateUnitAdmission<-as.Date(haiicu_pt$DateUnitAdmission,format="%Y-%m-%d")
+#haiicu_pt$DateUnitDischarge<-as.Date(haiicu_pt$DateUnitDischarge,format="%Y-%m-%d")
 haiicu_pt<-haiicu_pt%>%filter(DateUnitDischarge>DateUnitAdmission+1,!is.na(DateUnitDischarge))
 haiicu_pt$los<-as.numeric(haiicu_pt$DateUnitDischarge-haiicu_pt$DateUnitAdmission+1)
 haiicu_pt<-haiicu_pt%>%filter(los<366)
@@ -81,6 +94,7 @@ haiicu_level1$UnitId<-haiicu_level1$RecordId
 haiicu_pt_unit<-merge(haiicu_pt,haiicu_level1,by="UnitId")
 #haiicu_pt_unit$isNotification<-NULL
 save (haiicu_pt_unit, file="haiicu_pt_unit.Rda")
+
 #haiicu__pt_inf cleaning -- infection data -----------
 haiicu_pt_inf<-read.csv("3.HAIICU$PT$INF.csv") #load 3.HAIICU$Pt$INf
 haiicu_pt_inf$Id<-haiicu_pt_inf$ParentId
@@ -97,8 +111,9 @@ haiicu_pt_inf_all$hasHai<-!is.na(haiicu_pt_inf_all$InfectionSite)
 haiicu_pt_inf_all$dupl_pat<-duplicated(haiicu_pt_inf_all$Id)
 
 #calculate length of stay ---------
-haiicu_pt_inf_all$DateUnitAdmission<-as.Date(haiicu_pt_inf_all$DateUnitAdmission)
-haiicu_pt_inf_all$DateUnitDischarge<-as.Date(haiicu_pt_inf_all$DateUnitDischarge)
+haiicu_pt_inf_all<-haiicu_pt_inf_all%>%mutate(across(c(DateUnitAdmission, DateUnitDischarge,DateOfOnset), parse_mixed_date)) 
+#haiicu_pt_inf_all$DateUnitAdmission<-as.Date(haiicu_pt_inf_all$DateUnitAdmission)
+#haiicu_pt_inf_all$DateUnitDischarge<-as.Date(haiicu_pt_inf_all$DateUnitDischarge)
 haiicu_pt_inf_all$lengthofstay<-haiicu_pt_inf_all$DateUnitDischarge-haiicu_pt_inf_all$DateUnitAdmission+1
 haiicu_pt_inf_all<-haiicu_pt_inf_all%>%filter(lengthofstay<366)
 haiicu_pt_inf_all<-haiicu_pt_inf_all%>%unique()
@@ -260,8 +275,11 @@ saveRDS(UTIinc_EU,file="UTIinc_EU.Rda")
 
 #Exposure data -------
 haiicuexp<-read.csv("3.HAIICU$PT$EXP.csv") #load 3.HAIICU$Pt$Exp.csv
-haiicuexp$DateExpStart<-as.Date(haiicuexp$DateExpStart,"%Y-%m-%d")
-haiicuexp$DateExpEnd<-as.Date(haiicuexp$DateExpEnd,"%Y-%m-%d")
+haiicuexp<-haiicuexp%>%mutate(across(c(DateExpStart, DateExpEnd), parse_mixed_date)) 
+#haiicuexp$DateExpStart<-as.Date(haiicuexp$DateExpStart,"%Y-%m-%d") #use this code if date format is yyyy-mm-dd
+#haiicuexp$DateExpEnd<-as.Date(haiicuexp$DateExpEnd,"%Y-%m-%d") #use this code if date format is yyyy-mm-dd
+#haiicuexp$DateExpStart<-as.Date(haiicuexp$DateExpStart,"%d/%m/%Y") #use this code if date format is dd/mm/yyyy
+#haiicuexp$DateExpEnd<-as.Date(haiicuexp$DateExpEnd,"%d/%m/%Y") #use this code if date format is dd/mm/yyyy
 #correct if DateExpStart after DateExpEnd--------------------------------------------------
 
 haiicuexp$DateExpEnd<-as.Date(haiicuexp$DateExpEnd)
@@ -1163,6 +1181,7 @@ haiicu_level1$ReportingCountry[haiicu_level1$ReportingCountry=="IT"]<-haiicu_lev
 #exposure data####
 haiicuexp<-read.csv("haiicuexp_correct.csv")
 haiicuexp<-select(haiicuexp,RecordId,ParentId,DateExpStart, DateExpEnd,ExpType)
+haiicuexp <- haiicuexp %>% mutate(across(c(DateExpStart, DateExpEnd), parse_mixed_date))
 haiicuexp$expdays<-as.Date(haiicuexp$DateExpEnd,format="%Y-%m-%d")-as.Date(haiicuexp$DateExpStart,format="%Y-%m-%d")+1
 expint<-filter(haiicuexp, ExpType=="INT")
 expcvc<-filter(haiicuexp,ExpType=="CVC")
