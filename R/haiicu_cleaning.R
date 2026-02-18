@@ -497,7 +497,7 @@ PNmicrolight<-distinct(PNmicrolight)
 ptPNmicro<-merge(PNmicro[,c("RecordId","InfectionSite","ResultIsolate", "ParentId")],pat[,c("RecordId","ParentId")],by.x="ParentId",by.y="RecordId",all=FALSE)
 ptPNmicro<-ptPNmicro[,-c(1)]
 
-ptPNmicrolight<-merge(PNmicrolight[,c("RecordId","InfectionSite","ResultIsolate", "ParentId")],ptlight[,c("RecordId","ParentId")],by.x="Id",by.y="RecordId",all=FALSE)
+#ptPNmicrolight<-merge(PNmicrolight[,c("RecordId","InfectionSite","ResultIsolate", "ParentId")],ptlight[,c("RecordId","ParentId")],by.x="Id",by.y="RecordId",all=FALSE)
 
 pt<-read_data_csv("2.HAIICU$PT.csv")
 standard<-haiicu_level1
