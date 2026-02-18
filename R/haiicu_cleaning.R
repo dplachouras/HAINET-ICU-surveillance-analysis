@@ -2,97 +2,21 @@ library(dplyr)
 library(tidyr)
 library(ggplot2)
 library(data.table)
-
-setwd("C:/Users/dplachouras/OneDrive - European Centre for Disease Prevention and Control/Documents/HAINETICU_2023")
-
-#function definitions --------
-prc<-function(x){return(100*round(x,digits=3))}
-pct<-function(x,tot){prc(sum(x,na.rm=TRUE)/tot)}
-unfactor<-function(x){as.numeric(as.character(x))}
-p25<-function(x){quantile(x,c(0.25),na.rm=TRUE)}
-p75<-function(x){quantile(x,c(0.75),na.rm=TRUE)}
+library(here)
 
 
-parse_mixed_date <- function(x) {
-  x <- trimws(as.character(x))
-  x[x == ""] <- NA_character_
-  
-  # Try ISO first, then dd/mm/yyyy
-  d1 <- as.Date(x, format = "%Y-%m-%d")
-  d2 <- as.Date(x, format = "%d/%m/%Y")
-  
-  coalesce(d1, d2)
-}
-
-#top 10 microorganism by country tables function -----
-build_top10_country_tables <- function(df,
-                                       isolate_col = "Isolate",
-                                       total_col = "total",
-                                       totalpc_col = "totalpc",
-                                       country_name_lut = c(
-                                         AT = "Austria", BE = "Belgium", CZ = "Czech Republic",
-                                         DE = "Germany", EE = "Estonia", ES = "Spain",
-                                         FR = "France", HU = "Hungary", IT = "Italy",
-                                         LT = "Lithuania", LU = "Luxembourg", MT = "Malta",
-                                         PL = "Poland", PT = "Portugal", RO = "Romania",
-                                         SK = "Slovakia", UK = "United Kingdom",
-                                         "IT-SPIN-UTI" = "Italy-SPIN-UTI",
-                                         "IT-GiViTI" = "Italy-GiViTI",
-                                         ITSPINUTI = "Italy-SPIN-UTI",
-                                         ITGiViTI = "Italy-GiViTI"
-                                       )) {
-
-  # Numeric country count columns (exclude totals and percentage columns)
-  country_cols <- df %>%
-    dplyr::select(where(is.numeric), -dplyr::any_of(c(total_col, totalpc_col)), -dplyr::matches("pc$")) %>%
-    names()
-
-  # Percentage columns
-  country_pc_cols <- df %>%
-    dplyr::select(dplyr::matches("pc$"), -dplyr::any_of(totalpc_col)) %>%
-    names()
-
-  summary_tbl <- df %>%
-    dplyr::summarise(dplyr::across(dplyr::all_of(country_cols), ~ sum(.x, na.rm = TRUE))) %>%
-    dplyr::mutate(total = rowSums(dplyr::across(dplyr::all_of(country_cols)), na.rm = TRUE))
-
-  totals_tbl <- df %>%
-    dplyr::select(dplyr::all_of(country_cols), dplyr::any_of(total_col)) %>%
-    dplyr::summarise(dplyr::across(dplyr::everything(), ~ sum(.x, na.rm = TRUE), .names = "{.col}_sum"))
-
-  pc_tbl <- df %>%
-    dplyr::select(dplyr::all_of(isolate_col), dplyr::all_of(country_pc_cols), dplyr::any_of(totalpc_col)) %>%
-    dplyr::mutate(dplyr::across(-dplyr::all_of(isolate_col), ~ tidyr::replace_na(.x, 0)))
-
-  # Rename % columns to full country names
-  pc_keys <- sub("pc$", "", country_pc_cols)
-  display_names <- ifelse(
-    is.na(country_name_lut[pc_keys]),
-    pc_keys,
-    unname(country_name_lut[pc_keys])
-  )
-
-  names(pc_tbl) <- c(
-    isolate_col,
-    display_names,
-    if (totalpc_col %in% names(pc_tbl)) "total"
-  )
-
-  list(
-    summary = summary_tbl,
-    totals = totals_tbl,
-    pc = pc_tbl,
-    country_cols = country_cols,
-    country_pc_cols = country_pc_cols
-  )
-}
+source(here("R", "haiicu_functions.r")) 
+year <- Sys.getenv("HAINET_YEAR", unset = "2023")
+DATA_DIR <- here("data", "raw", year)
+OUTPUT_DIR <- here("outputs", year)
+dir.create(OUTPUT_DIR, recursive = TRUE, showWarnings = FALSE)
 
 #variable check
-unit<-fread("1.HAIICU.csv")
-deno <- fread("2.HAIICU$Denom.csv")
-ind <- fread("3.HAIICU$Denom$Ind.csv")
-inf <- fread("3.HAIICU$Pt$Inf.csv", data.table = FALSE)
-pat<-fread("2.HAIICU$Pt.csv",data.table=FALSE)
+unit<-read_data_fread("1.HAIICU.csv")
+deno <- read_data_fread("2.HAIICU$Denom.csv")
+ind <- read_data_fread("3.HAIICU$Denom$Ind.csv")
+inf <- read_data_fread("3.HAIICU$Pt$Inf.csv", data.table = FALSE)
+pat<-read_data_fread("2.HAIICU$Pt.csv",data.table=FALSE)
 
 denom<-left_join(unit,deno,by=c("RecordId"="ParentId"))
 indic<-left_join(ind,deno,by=c("ParentId"="RecordId"))
@@ -101,10 +25,10 @@ mort<-left_join(pat,select(unit,RecordId,ReportingCountry),by=c("ParentId"="Reco
 mort<-left_join(select(inf,ParentId),mort,by=c("ParentId"="RecordId"))
 
 
-unitl<-fread("1.HAIICULIGHT.csv")
-denol <- fread("2.HAIICULIGHT$Deno.csv")
-indl <- fread("3.HAIICULIGHT$Deno$Ind.csv")
-infl <- fread("3.HAIICULIGHT$Deno$Inf.csv", data.table = FALSE)
+unitl<-read_data_fread("1.HAIICULIGHT.csv")
+denol <- read_data_fread("2.HAIICULIGHT$Deno.csv")
+indl <- read_data_fread("3.HAIICULIGHT$Deno$Ind.csv")
+infl <- read_data_fread("3.HAIICULIGHT$Deno$Inf.csv", data.table = FALSE)
 
 denoml<-left_join(unitl,denol,by=c("RecordId"="ParentId"))
 indicl<-left_join(indl,denol,by=c("ParentId"="RecordId"))
@@ -132,10 +56,10 @@ table(inf$InfectionSite)
 
 CountryCodeLUT<-c("BE"="Belgium","CZ"="Czech Republic","EE"="Estonia","FR"="France","DE"="Germany","HU"="Hungary","IT"="Italy","LT"="Lithuania","LU"="Luxembourg","MT"="Malta", "PL"="Poland","PT"="Portugal", "RO"="Romania","SK"="Slovakia","ES"="Spain","UK"="United Kingdom")
 #haiicu_level1 cleaning --------
-haiicu_level1<-read.csv("1.HAIICU.csv")   #load 1.HAIICU.csv
+haiicu_level1<-read_data_csv("1.HAIICU.csv")   #load 1.HAIICU.csv
 levels(haiicu_level1$ReportingCountry)<-c(levels(haiicu_level1$ReportingCountry),"IT-GiViTI","IT-SPIN-UTI")
 haiicu_level1$ReportingCountry[haiicu_level1$ReportingCountry=="IT"]<-haiicu_level1$DataSource[haiicu_level1$ReportingCountry=="IT"]#Replace IT with network name
-haiicu_level1_light<-read.csv("1.HAIICULIGHT.csv") #load 1.HAIICULIGHT.csv
+haiicu_level1_light<-read_data_csv("1.HAIICULIGHT.csv") #load 1.HAIICULIGHT.csv
 haiicu_level1$ReportingCountry<-as.character(haiicu_level1$ReportingCountry)
 haiicu_level1_all<-rbind(haiicu_level1,haiicu_level1_light)
 haiicu_level1_all$ReportingCountry<-as.factor(haiicu_level1_all$ReportingCountry)
@@ -143,9 +67,9 @@ haiicu_level1_all<-haiicu_level1_all%>%mutate(UnitSize=replace(UnitSize,UnitSize
 attach(haiicu_level1_all)
 haiicu_level1_all$UnitIdGlobal<-as.factor(paste(ReportingCountry,HospitalId,UnitId,collapse=NULL)) #unique identifier for ICU
 haiicu_level1_all$HospitalIdGlobal<-as.factor(paste(ReportingCountry,HospitalId,collapse=NULL)) #unique identifier for Hospital
-save (haiicu_level1_all, file="haiicu_level1_all.Rda")
+save_output(haiicu_level1_all, file="haiicu_level1_all.Rda")
 #haiicu_level2 cleaning -- patient level data -------
-haiicu_pt<-read.csv("2.HAIICU$PT.csv") #load 2.HAIICU$Pt
+haiicu_pt<-read_data_csv("2.HAIICU$PT.csv") #load 2.HAIICU$Pt
 
 haiicu_pt<-haiicu_pt%>%mutate(across(c(DateUnitAdmission, DateUnitDischarge), parse_mixed_date))
 #haiicu_pt$DateUnitAdmission<-as.Date(haiicu_pt$DateUnitAdmission,format="%Y-%m-%d")
@@ -157,10 +81,10 @@ haiicu_pt$UnitId<-haiicu_pt$ParentId
 haiicu_level1$UnitId<-haiicu_level1$RecordId
 haiicu_pt_unit<-merge(haiicu_pt,haiicu_level1,by="UnitId")
 #haiicu_pt_unit$isNotification<-NULL
-save (haiicu_pt_unit, file="haiicu_pt_unit.Rda")
+save_output(haiicu_pt_unit, file="haiicu_pt_unit.Rda")
 
 #haiicu__pt_inf cleaning -- infection data -----------
-haiicu_pt_inf<-read.csv("3.HAIICU$PT$INF.csv") #load 3.HAIICU$Pt$INf
+haiicu_pt_inf<-read_data_csv("3.HAIICU$PT$INF.csv") #load 3.HAIICU$Pt$INf
 haiicu_pt_inf$Id<-haiicu_pt_inf$ParentId
 haiicu_pt_unit$Id<-haiicu_pt_unit$RecordId.x
 haiicu_pt_inf_all<-merge(haiicu_pt_unit, haiicu_pt_inf,by="Id", all=TRUE) #merged file of all patients incl infections data
@@ -193,7 +117,7 @@ haiicu_pt_inf_all<-haiicu_pt_inf_all%>%mutate(losPN=case_when (ReportingCountry=
 #haiicu_pt_unit$Id<-haiicu_pt_unit$RecordId.y
 pn_incid<-sum(grepl("PN", haiicu_pt_inf_all$InfectionSite))/(sum(as.numeric(haiicu_pt_inf_all$lengthofstay[!haiicu_pt_inf_all$dupl_pat]),na.rm=TRUE))*1000
 bsi_incid<-sum(grepl("BSI|CRI3", haiicu_pt_inf_all$InfectionSite))/(sum(as.numeric(haiicu_pt_inf_all$lengthofstay[!haiicu_pt_inf_all$dupl_pat]),na.rm=TRUE))*1000
-saveRDS(haiicu_pt_inf_all,"haiicu_pt_inf_all.Rda")
+save_output_rds(haiicu_pt_inf_all,"haiicu_pt_inf_all.Rda")
 
 #aggregate by icu ---------
 haiicu_unit_inc<-select(haiicu_pt_inf_all, Id,UnitId,InfectionSite,lengthofstay,BSIOrigin)
@@ -212,10 +136,10 @@ haiicu_unit_inc<-group_by(haiicu_unit_inc,UnitId)%>%summarise(BSI=sum(BSI,na.rm=
 #haiicu_unit_inc<-aggregate(haiicu_unit_inc,by=list(haiicu_unit_inc$UnitId),FUN=count,na.rm=TRUE)
 #haiicu_unit_inc<-rename(haiicu_unit_inc,RecordId=Group.1)
 haiicu_level1_inf<-merge(haiicu_level1, haiicu_unit_inc, by.x="RecordId",by.y="UnitId", all.x=TRUE)
-save(haiicu_level1_inf, file="haiicu_level1_inf.Rda") #aggregated infection data from standard protocol for incidence estimation
+save_output(haiicu_level1_inf, file="haiicu_level1_inf.Rda") #aggregated infection data from standard protocol for incidence estimation
 
 #icu light protocol aggregate infection data ---------
-haiicu_unitlight_inc<-read.csv("3.HAIICULIGHT$Deno$Inf.csv") #Load 3.HAIICULIGHT$Deno$Inf
+haiicu_unitlight_inc<-read_data_csv("3.HAIICULIGHT$Deno$Inf.csv") #Load 3.HAIICULIGHT$Deno$Inf
 haiicu_unitlight_inc<-select(haiicu_unitlight_inc, ParentId,RecordId,InfectionSite,BSIOrigin)
 
 haiicu_unitlight_inc$BSI<-grepl("BSI",haiicu_unitlight_inc$InfectionSite)
@@ -240,11 +164,11 @@ haiicu_unitlight_inc<-select(haiicu_unitlight_inc,-Group.1)
 haiicu_unitlight_inc<-aggregate(haiicu_unitlight_inc,by=list(haiicu_unitlight_inc$RecordId),FUN=sum,na.rm=TRUE)
 haiicu_unitlight_inc<-select(haiicu_unitlight_inc, RecordId, BSI, PN, UTI, CRI3,PRBSI)
 
-haiicu_unitlight_deno<-read.csv("2.HAIICULIGHT$Deno.csv") #load 2.HAIICULIGHT$Deno
+haiicu_unitlight_deno<-read_data_csv("2.HAIICULIGHT$Deno.csv") #load 2.HAIICULIGHT$Deno
 haiicu_unitlight_inf<-merge(haiicu_unitlight_deno, haiicu_unitlight_inc, by="RecordId", all.x=TRUE)
 haiicu_unitlight_inf$RecordId<-haiicu_unitlight_inf$ParentId
 haiicu_unitlight_all<-merge(haiicu_level1_light, haiicu_unitlight_inf, by="RecordId", all.x=TRUE)
-save(haiicu_unitlight_all, file="haiicu_unitlight_all.Rda") #aggregated file of light protocol for incidence estimation
+save_output(haiicu_unitlight_all, file="haiicu_unitlight_all.Rda") #aggregated file of light protocol for incidence estimation
 
 
 #get lengthofstay per unit in patient data
@@ -265,7 +189,7 @@ haiicustandard1$NumPatDaysUnit2d<-haiicustandard1$lengthofstay
 haiicustandard1<-select(haiicustandard1, -lengthofstay)
 haiicustandard1<-select(haiicustandard1, RecordId,ReportingCountry, HospitalSize, HospitalType,UnitSize,UnitSpecialty,UnitPercentIntub,NumPatDaysUnit2d, BSI,PN,UTI,CRI3,PRBSI)
 haiicuall<-rbind(haiiculight1,haiicustandard1)
-save(haiicuall,file="haiicuall.Rda") # combined light and standard file (haiiculight missing NumPatDaysUnit2d)
+save_output(haiicuall,file="haiicuall.Rda") # combined light and standard file (haiiculight missing NumPatDaysUnit2d)
 
 haiiculight2<-select(haiicu_unitlight_all, RecordId, ReportingCountry, HospitalSize, HospitalType,UnitSize,UnitSpecialty,UnitPercentIntub, NumPatDaysUnit, BSI,PN,UTI,CRI3,PRBSI)
 haiiculight2$NumPatDaysUnit2d<-haiiculight2$NumPatDaysUnit
@@ -275,7 +199,7 @@ haiicuall2<-rbind(haiicustandard1,haiiculight2)
 haiicuall2$UTI_incdens<-round(haiicuall2$UTI/haiicuall2$NumPatDaysUnit2d*1000,digits=2)
 haiicuall2$BSI_incdens<-round((haiicuall2$BSI+haiicuall2$CRI3)/haiicuall2$NumPatDaysUnit2d*1000,digits=2)
 haiicuall2$PN_incdens<-round(haiicuall2$PN/haiicuall2$NumPatDaysUnit2d*1000,digits=2)
-saveRDS(haiicuall2,"haiicuall2.Rda")
+save_output_rds(haiicuall2,"haiicuall2.Rda")
 
 
 
@@ -289,7 +213,7 @@ PNinc_country<-haiicuall2%>%group_by(ReportingCountry)%>%summarise(n_PN=sum(PN,n
                                       median=round(quantile(1000*PN/NumPatDaysUnit2d,probs=c(0.5),na.rm=TRUE),digits=2),
                                       pct75=round(quantile(1000*PN/NumPatDaysUnit2d,probs=c(0.75),na.rm=TRUE),digits=2)
 )
-saveRDS(PNinc_country,file="PNinc_country.Rda")
+save_output_rds(PNinc_country,file="PNinc_country.Rda")
 BSIinc_country<-haiicuall2%>%group_by(ReportingCountry)%>%summarise(n_BSI=sum(BSI+CRI3,na.rm=TRUE),
                                                                    n_NumPtDays=sum(NumPatDaysUnit2d,na.rm=TRUE),
                                                                    BSIinc=round(1000*(sum(BSI,na.rm=TRUE)+sum(CRI3,na.rm=TRUE))/sum(NumPatDaysUnit2d,na.rm=TRUE),digits=2),
@@ -298,7 +222,7 @@ BSIinc_country<-haiicuall2%>%group_by(ReportingCountry)%>%summarise(n_BSI=sum(BS
                                                                    median=round(quantile(1000*(BSI+CRI3)/NumPatDaysUnit2d,probs=c(0.5),na.rm=TRUE),digits=2),
                                                                    pct75=round(quantile(1000*(BSI+CRI3)/NumPatDaysUnit2d,probs=c(0.75),na.rm=TRUE),digits=2)
 )
-saveRDS(BSIinc_country,file="BSIinc_country.Rda")
+save_output_rds(BSIinc_country,file="BSIinc_country.Rda")
 UTIinc_country<-haiicuall2%>%group_by(ReportingCountry)%>%summarise(n_UTI=sum(UTI,na.rm=TRUE),
                                                                    n_NumPtDays=sum(NumPatDaysUnit2d,na.rm=TRUE),
                                                                    UTIinc=round(1000*sum(UTI,na.rm=TRUE)/sum(NumPatDaysUnit2d,na.rm=TRUE),digits=2),
@@ -307,7 +231,7 @@ UTIinc_country<-haiicuall2%>%group_by(ReportingCountry)%>%summarise(n_UTI=sum(UT
                                                                    median=round(quantile(1000*UTI/NumPatDaysUnit2d,probs=c(0.5),na.rm=TRUE),digits=2),
                                                                    pct75=round(quantile(1000*UTI/NumPatDaysUnit2d,probs=c(0.75),na.rm=TRUE),digits=2)
 )
-saveRDS(UTIinc_country,file="UTIinc_country.Rda")
+save_output_rds(UTIinc_country,file="UTIinc_country.Rda")
 PNinc_EU<-haiicuall2%>%filter(!ReportingCountry=="DE")%>%
                       summarise(n_PN=sum(PN,na.rm=TRUE),
                                  n_NumPtDays=sum(NumPatDaysUnit2d,na.rm=TRUE),
@@ -317,7 +241,7 @@ PNinc_EU<-haiicuall2%>%filter(!ReportingCountry=="DE")%>%
                                  median=round(quantile(1000*PN/NumPatDaysUnit2d,probs=c(0.5),na.rm=TRUE),digits=2),
                                  pct75=round(quantile(1000*PN/NumPatDaysUnit2d,probs=c(0.75),na.rm=TRUE),digits=2)
                                  )
-saveRDS(PNinc_EU,file="PNinc_EU.Rda")
+save_output_rds(PNinc_EU,file="PNinc_EU.Rda")
 BSIinc_EU<-haiicuall2%>%filter(!ReportingCountry=="DE")%>%summarise(n_BSI=sum(BSI+CRI3,na.rm=TRUE),
                                  n_NumPtDays=sum(NumPatDaysUnit2d,na.rm=TRUE),
                                  BSIinc_EU=round(1000*(sum(BSI,na.rm=TRUE)+sum(CRI3,na.rm=TRUE))/sum(NumPatDaysUnit2d,na.rm=TRUE),digits=2),
@@ -326,7 +250,7 @@ BSIinc_EU<-haiicuall2%>%filter(!ReportingCountry=="DE")%>%summarise(n_BSI=sum(BS
                                  median=round(quantile(1000*(BSI+CRI3)/NumPatDaysUnit2d,probs=c(0.5),na.rm=TRUE),digits=2),
                                  pct75=round(quantile(1000*(BSI+CRI3)/NumPatDaysUnit2d,probs=c(0.75),na.rm=TRUE),digits=2)
 )
-saveRDS(BSIinc_EU,file="BSIinc_EU.Rda")
+save_output_rds(BSIinc_EU,file="BSIinc_EU.Rda")
 UTIinc_EU<-haiicuall2%>%filter(!ReportingCountry %in% c("DE","FR"))%>%summarise(n_UTI=sum(UTI,na.rm=TRUE),
                                  n_NumPtDays=sum(NumPatDaysUnit2d,na.rm=TRUE),
                                  UTIinc_EU=round(1000*sum(UTI,na.rm=TRUE)/sum(NumPatDaysUnit2d,na.rm=TRUE),digits=2),
@@ -335,10 +259,10 @@ UTIinc_EU<-haiicuall2%>%filter(!ReportingCountry %in% c("DE","FR"))%>%summarise(
                                  median=round(quantile(1000*UTI/NumPatDaysUnit2d,probs=c(0.5),na.rm=TRUE),digits=2),
                                  pct75=round(quantile(1000*UTI/NumPatDaysUnit2d,probs=c(0.75),na.rm=TRUE),digits=2)
 )
-saveRDS(UTIinc_EU,file="UTIinc_EU.Rda")
+save_output_rds(UTIinc_EU,file="UTIinc_EU.Rda")
 
 #Exposure data -------
-haiicuexp<-read.csv("3.HAIICU$PT$EXP.csv") #load 3.HAIICU$Pt$Exp.csv
+haiicuexp<-read_data_csv("3.HAIICU$PT$EXP.csv") #load 3.HAIICU$Pt$Exp.csv
 haiicuexp<-haiicuexp%>%mutate(across(c(DateExpStart, DateExpEnd), parse_mixed_date)) 
 #haiicuexp$DateExpStart<-as.Date(haiicuexp$DateExpStart,"%Y-%m-%d") #use this code if date format is yyyy-mm-dd
 #haiicuexp$DateExpEnd<-as.Date(haiicuexp$DateExpEnd,"%Y-%m-%d") #use this code if date format is yyyy-mm-dd
@@ -471,10 +395,10 @@ haiicuall_percintub$UnitPercentIntub<-ifelse(is.na(haiicuall_percintub$UnitPerce
 
 
 haiicuall_intub<-select(haiicuall_percintub,RecordId:PRBSI)
-save(haiicuall_intub,file="haiicuall_percintub.Rda")
+save_output(haiicuall_intub,file="haiicuall_percintub.Rda")
 
 #ICU length of stay for light protocol, missing values as "" ---------
-haiiculightdeno<-read.csv("2.HAIICULIGHT$Deno.csv") #load 2.HAIICULIGHT$Deno
+haiiculightdeno<-read_data_csv("2.HAIICULIGHT$Deno.csv") #load 2.HAIICULIGHT$Deno
 haiiculightdeno<-filter(haiiculightdeno,is.na(NumPatDaysUnit2d))
 haiiculightdeno$RecordId<-haiiculightdeno$ParentId
 haiiculightdeno<-select(haiiculightdeno,RecordId,NumPatDaysUnit)
@@ -490,7 +414,7 @@ haiicu_percintub <- haiicu_percintub[, !duplicated(colnames(haiicu_percintub))]
 
 #incidence of pneumonia per intubation percentage group ---------
 haiicu_percintub$incdens<-round(haiicu_percintub$PN/as.numeric(haiicu_percintub$NumPatDaysUnit2d)*1000,digits=2)
-saveRDS(haiicu_percintub,file="haiicu_percintub.Rda")
+save_output_rds(haiicu_percintub,file="haiicu_percintub.Rda")
 per_intubgroup<-group_by(haiicu_percintub,intubgroup)
 #PNcases_byintubgroup<-summarise(per_intubgroup,PNcases=sum(PN,na.rm=TRUE),patdays=sum(as.numeric(NumPatDaysUnit2d),na.rm=TRUE),PNinc=round(PNcases/patdays*1000,digits=2))
 PNinc_byintubgroup<-summarise(per_intubgroup,meanPNinc=mean(incdens[incdens!=Inf],na.rm=TRUE))
@@ -522,7 +446,7 @@ haiicudenscountr$avglos<-round(haiicudenscountr$lengthofstay/haiicudenscountr$ad
 haiicudenscountr$intubuse<-round(100*haiicudenscountr$expdays/as.numeric(haiicudenscountr$lengthofstay),digits=1)
 haiicudenscountr<-filter(haiicudenscountr,adm>9)#ICUs with less than 10 admissions were excluded due to skewed data
 
-saveRDS(haiicudenscountr,file="haiicuiapdens.Rda")
+save_output_rds(haiicudenscountr,file="haiicuiapdens.Rda")
 
 #IAP table -------
 
@@ -548,15 +472,15 @@ IAPtable<-summarise(by_country,
                     iaprate75pct=round(quantile(iapincintubdays,probs=c(0.75),na.rm=TRUE),digits=2))
 #IAPtable<-bind_rows(IAPtable,eu_iap) #under development
 
-saveRDS(IAPtable,file="IAPtable.Rda")
+save_output_rds(IAPtable,file="IAPtable.Rda")
 
 
 #pneumonia pathogens -------
-micro<-read.csv("4.HAIICU$PT$INF$RES.csv") #load 4.HAIICU$Pt$Inf$Res.csv
-microlight<-read.csv("4.HAIICULIGHT$Deno$Inf$Res.csv") #load 4.HAIICULIGHT$Deno$Inf$Res.csv
-inf<-read.csv("3.HAIICU$PT$INF.csv") #load 3.HAIICU$Pt$Inf.csv
-inflight<-read.csv("3.HAIICULIGHT$Deno$Inf.csv") #load 3.HAIICULIGHT$Deno$Inf
-ptlight<-read.csv("2.HAIICULIGHT$Deno.csv")
+micro<-read_data_csv("4.HAIICU$PT$INF$RES.csv") #load 4.HAIICU$Pt$Inf$Res.csv
+microlight<-read_data_csv("4.HAIICULIGHT$Deno$Inf$Res.csv") #load 4.HAIICULIGHT$Deno$Inf$Res.csv
+inf<-read_data_csv("3.HAIICU$PT$INF.csv") #load 3.HAIICU$Pt$Inf.csv
+inflight<-read_data_csv("3.HAIICULIGHT$Deno$Inf.csv") #load 3.HAIICULIGHT$Deno$Inf
+ptlight<-read_data_csv("2.HAIICULIGHT$Deno.csv")
 PN<-select(inf,RecordId,ParentId,InfectionSite)
 PN<-filter(PN,grepl("PN",PN$InfectionSite))
 PNlight<-select(inflight,RecordId,ParentId,InfectionSite)
@@ -575,10 +499,10 @@ ptPNmicro<-ptPNmicro[,-c(1)]
 
 ptPNmicrolight<-merge(PNmicrolight[,c("RecordId","InfectionSite","ResultIsolate", "ParentId")],ptlight[,c("RecordId","ParentId")],by.x="Id",by.y="RecordId",all=FALSE)
 
-pt<-read.csv("2.HAIICU$PT.csv")
+pt<-read_data_csv("2.HAIICU$PT.csv")
 standard<-haiicu_level1
-lightdeno<-read.csv("2.HAIICULIGHT$Deno.csv")
-light<-read.csv("1.HAIICULIGHT.csv")
+lightdeno<-read_data_csv("2.HAIICULIGHT$Deno.csv")
+light<-read_data_csv("1.HAIICULIGHT.csv")
 
 
 ptPNmicro<-merge(PNmicro[,c("RecordId","InfectionSite","ResultIsolate", "ParentId")],pt[,c("RecordId","ParentId")],by.x="ParentId",by.y="RecordId",all=FALSE)
@@ -653,19 +577,19 @@ pn_out <- build_top10_country_tables(PNtable_group_top10)
 summaryPNtable_top10 <- pn_out$summary
 PNtable_group_totals <- pn_out$totals
 PNtable_group_top10_pc <- pn_out$pc
-saveRDS(PNtable_group_top10_pc,file="PNtable_group_top10_pc.Rda")
+save_output_rds(PNtable_group_top10_pc,file="PNtable_group_top10_pc.Rda")
 
 
 
 #BSI----------------------------------------------
 haiicu_aggr<-haiicu_percintub
-saveRDS(haiicu_aggr,file="haiicu_aggr.Rda")
+save_output_rds(haiicu_aggr,file="haiicu_aggr.Rda")
 bsi_incid_aggr<-(sum(haiicu_aggr$BSI,na.rm=TRUE)+sum(haiicu_aggr$CRI,na.rm=TRUE))/(sum(as.numeric(haiicu_aggr$NumPatDaysUnit2d),na.rm=TRUE))*1000
 haiicu_aggr$bsi_incdens<-round(haiicu_aggr$BSI/as.numeric(haiicu_aggr$NumPatDaysUnit2d)*1000,digits=2)
 haiicu_aggr$bsicri_incdens<-round((haiicu_aggr$BSI+haiicu_aggr$CRI)/as.numeric(haiicu_aggr$NumPatDaysUnit2d)*1000,digits=2)
 haiicu_aggr$prbsi_incdens<-round((haiicu_aggr$PRBSI)/as.numeric(haiicu_aggr$NumPatDaysUnit2d)*1000,digits=2)
 
-saveRDS(haiicu_aggr,file="haiicu_aggr.Rda")
+save_output_rds(haiicu_aggr,file="haiicu_aggr.Rda")
 #average BSI incidence per ICU -------------------
 avg_bsi_incdens<-mean(haiicu_aggr$bsi_incdens,na.rm=TRUE)
 #proportion of patients in standard protocol with BSI -------------
@@ -675,12 +599,12 @@ haiicu_unitstand_bsi<-filter(haiicu_unitstand_bsi,haiicu_unitstand_bsi$Infection
 haiicu_unitstand_bsi<-rename(haiicu_unitstand_bsi,ParentId=Id)
 
 #bsi in light protocol --------
-haiicu_unitlight_bsi<-read.csv("3.HAIICULIGHT$Deno$Inf.csv") #load 3.HAIICULIGHT$Deno$Inf.csv
+haiicu_unitlight_bsi<-read_data_csv("3.HAIICULIGHT$Deno$Inf.csv") #load 3.HAIICULIGHT$Deno$Inf.csv
 haiicu_unitlight_bsi<-select(haiicu_unitlight_bsi,RecordId,ParentId,InfectionSite,InvasiveDevice,BSIOrigin)
 haiicu_unitlight_bsi<-filter(haiicu_unitlight_bsi,haiicu_unitlight_bsi$InfectionSite=="BSI"| grepl('CRI3',haiicu_unitlight_bsi$InfectionSite))
 
 haiicu_unitall_bsi<-rbind(haiicu_unitstand_bsi,haiicu_unitlight_bsi)#merge standard and light bsi
-saveRDS(haiicu_unitall_bsi,file="haiicu_unitall_bsi.Rda")
+save_output_rds(haiicu_unitall_bsi,file="haiicu_unitall_bsi.Rda")
 
 round(sum(grepl("^C",haiicu_unitall_bsi$BSIOrigin))/summarise(haiicu_unitall_bsi,n=n())*100,digits=2)# % catheter related BSI
 round(sum(grepl("^S",haiicu_unitall_bsi$BSIOrigin))/summarise(haiicu_unitall_bsi,n=n())*100,digits=2)# secondary BSI
@@ -710,14 +634,14 @@ cvcexp_byicu<-haiicu_expcvc%>%select(UnitId,expdays)%>%group_by(UnitId)%>%summar
 
 haiicu_unit_expcvc<-merge(haiicu_aggr,cvcexp_byicu,by.x="RecordId",by.y ="UnitId")
 #haiicu_unit_expcvc<-filter(haiicu_unit_expcvc,unitexpdays>49)
-saveRDS(haiicu_unit_expcvc,"haiicu_unit_expcvc.Rda")
+save_output_rds(haiicu_unit_expcvc,"haiicu_unit_expcvc.Rda")
 
 #catheter utilisation rate ------------
 cvc_rate<-round(mean(haiicu_unit_expcvc$unitexpdays/as.numeric(haiicu_unit_expcvc$NumPatDaysUnit2d),na.rm=TRUE)*1000,digits=2)
 haiicu_country_expcvc<-haiicu_unit_expcvc%>%select(ReportingCountry,unitexpdays,NumPatDaysUnit2d)%>%group_by(ReportingCountry)%>%summarise(countryexpdays=sum(as.numeric(unitexpdays,na.rm=TRUE),na.rm=TRUE),patientdays=sum(as.numeric(NumPatDaysUnit2d), na.rm=TRUE))
 haiicu_country_expcvc$utilrate<-round(as.numeric(haiicu_country_expcvc$countryexpdays)/as.numeric(haiicu_country_expcvc$patientdays),digits=2)
 round(mean(haiicu_unit_expcvc$unitexpdays,na.rm=TRUE)/mean(as.numeric(haiicu_unit_expcvc$NumPatDaysUnit2d),na.rm=TRUE)*1000,digits=0)
-saveRDS(haiicu_country_expcvc,"haiicu_country_expcvc.Rda")
+save_output_rds(haiicu_country_expcvc,"haiicu_country_expcvc.Rda")
 
 #crbsi by exposure days -------
 haiicu_crbsi<-merge(haiicu_pt,haiicu_unitstand_bsi,by.x="RecordId",by.y="ParentId",all.x=TRUE)
@@ -738,7 +662,7 @@ haiicu_cvcasbsi$clabsi<-TRUE
 
 haiicu_pt_inf_all<-merge(haiicu_pt_inf_all,haiicu_cvcasbsi[,c("RecordId","clabsi")],by="RecordId",all=TRUE)
 haiicu_pt_inf_all<-haiicu_pt_inf_all%>%unique()
-#saveRDS(haiicu_pt_inf_all,file="haiicu_pt_inf_all_clabsi.Rda")
+#save_output_rds(haiicu_pt_inf_all,file="haiicu_pt_inf_all_clabsi.Rda")
 haiicu_cvcasbsiaggr<-haiicu_cvcasbsi
 haiicu_cvcasbsiaggr<-select(haiicu_cvcasbsi,UnitId)
 haiicu_cvcasbsiaggr<-count(haiicu_cvcasbsi,UnitId)
@@ -764,7 +688,7 @@ haiicu_unit_bsidevadj$prbsiinc<-round(haiicu_unit_bsidevadj$prbsi/as.numeric(hai
 
 
 #haiicu_unit_bsidevadj<-filter(haiicu_unit_bsidevadj,ReportingCountry!="LU") #FILTER OUT LUXEMBOURG*******
-saveRDS(haiicu_unit_bsidevadj,"haiicu_unit_bsidevadj.Rda") #device adjusted crbsi rate by icu
+save_output_rds(haiicu_unit_bsidevadj,"haiicu_unit_bsidevadj.Rda") #device adjusted crbsi rate by icu
 
 #CLABSI table ------------
 
@@ -784,10 +708,10 @@ haiicu_unit_bsidevadj_totcritable<-filter(haiicu_unit_bsidevadj_totcritable,adm>
 haiicu_unit_bsidevadj_clabsitable<-merge(haiicu_unit_bsidevadj,haiicu_unit_bsidevadj_cvcasbsitable[,c("UnitId","CVCASBSI","lengthofstay")],by.x="RecordId",by.y="UnitId")
 haiicu_unit_bsidevadj_clabsitable$clabsiinc<-round(haiicu_unit_bsidevadj_clabsitable$CVCASBSI/as.numeric(haiicu_unit_bsidevadj_clabsitable$unitexpdays)*1000,digits=2)
 clabsi_bycountry<-haiicu_unit_bsidevadj_clabsitable%>%group_by(ReportingCountry)%>%summarise(countrclabsiinc=round(mean(clabsiinc,na.rm=TRUE),digits=2)) # device adjusted crbsi rate by country
-saveRDS(clabsi_bycountry,"clabsi_bycountry.Rda")
-saveRDS(haiicu_unit_bsidevadj_cvcasbsitable,"haiicu_unit_bsidevadj_cvcasbsitable.Rda")
+save_output_rds(clabsi_bycountry,"clabsi_bycountry.Rda")
+save_output_rds(haiicu_unit_bsidevadj_cvcasbsitable,"haiicu_unit_bsidevadj_cvcasbsitable.Rda")
 
-saveRDS(haiicu_unit_bsidevadj_clabsitable,"unit_clabsi.Rda")
+save_output_rds(haiicu_unit_bsidevadj_clabsitable,"unit_clabsi.Rda")
 
 
 eu_bsidevadj<-haiicu_unit_bsidevadj_totcritable%>%summarise(nricu=n(),nrpat=sum(adm,na.rm=TRUE),
@@ -803,7 +727,7 @@ eu_bsidevadj<-haiicu_unit_bsidevadj_totcritable%>%summarise(nricu=n(),nrpat=sum(
 
 bsidevadj_bycountry<-haiicu_unit_bsidevadj_totcritable%>%group_by(ReportingCountry)%>%summarise(countrbsidai=round(mean(devadjinc,na.rm=TRUE),digits=2)) # device adjusted crbsi rate by country
 cri3_bycountry<-haiicu_unit_bsidevadj_cri3table%>%group_by(ReportingCountry)%>%summarise(countrbsidai=round(mean(devadjcri3,na.rm=TRUE),digits=2)) # device adjusted cri3 rate by country
-saveRDS(bsidevadj_bycountry,file="bsidevadj_bycountry.Rda")
+save_output_rds(bsidevadj_bycountry,file="bsidevadj_bycountry.Rda")
 
 bsidevadj_totcritable_bycountry<-haiicu_unit_bsidevadj_totcritable%>%group_by(ReportingCountry)%>%summarise(
           n_cvcdays=sum(unitexpdays,na.rm=TRUE),
@@ -815,8 +739,8 @@ bsidevadj_totcritable_bycountry<-haiicu_unit_bsidevadj_totcritable%>%group_by(Re
           crbsiratemedian=round(median(devadjinc,na.rm=TRUE),digits=2),
           crbisrate75pct=round(quantile(devadjinc,probs=c(0.75),na.rm=TRUE),digits=2))
 #bsidevadj_totcritable_bycountry<-bind_rows(bsidevadj_totcritable_bycountry,eu_bsidevadj) #under development
-saveRDS(bsidevadj_totcritable_bycountry,file="totcrbsitable.Rda")
-saveRDS(haiicu_unit_bsidevadj_totcritable,file="unit_crbsi_table.Rda")
+save_output_rds(bsidevadj_totcritable_bycountry,file="totcrbsitable.Rda")
+save_output_rds(haiicu_unit_bsidevadj_totcritable,file="unit_crbsi_table.Rda")
 
 
 eu_prbsi<-haiicu_unit_bsidevadj_prbsitable%>%summarise( cvcdays=sum(unitexpdays,na.rm=TRUE),
@@ -839,7 +763,7 @@ prbsiinc_table_bycountry<-haiicu_unit_bsidevadj_prbsitable%>%group_by(ReportingC
                                                                                                     prbsiratemedian=round(median(prbsiinc,na.rm=TRUE),digits=2),
                                                                                                     prbisrate75pct=round(quantile(prbsiinc,probs=c(0.75),na.rm=TRUE),digits=2))
 #prbsiinc_table_bycountry<-bind_rows(prbsiinc_table_bycountry,eu_prbsi) #under development
-saveRDS(prbsiinc_table_bycountry,file="prbsi_table.Rda")
+save_output_rds(prbsiinc_table_bycountry,file="prbsi_table.Rda")
 
 bsidevadj_cri3table_bycountry<-haiicu_unit_bsidevadj_cri3table%>%group_by(ReportingCountry)%>%summarise(cvcdays=sum(unitexpdays,na.rm=TRUE),
                                                                                                         cvcuse=round(1000*mean(unitexpdays,na.rm=TRUE)/mean(as.numeric(NumPatDaysUnit2d),na.rm=TRUE),digits=0),
@@ -850,7 +774,7 @@ bsidevadj_cri3table_bycountry<-haiicu_unit_bsidevadj_cri3table%>%group_by(Report
                                                                                                         crbsiratemedian=round(median(devadjcri3,na.rm=TRUE),digits=2),
                                                                                                         crbisrate75pct=round(quantile(devadjcri3,probs=c(0.75),na.rm=TRUE),digits=2))
 
-saveRDS(bsidevadj_cri3table_bycountry,"cri3table.Rda")
+save_output_rds(bsidevadj_cri3table_bycountry,"cri3table.Rda")
 
 #CLABSI incidence------------------
 
@@ -875,7 +799,7 @@ bsidevadj_cvcasbsitable_bycountry<-haiicu_unit_bsidevadj_clabsitable%>%group_by(
                                                                                                             clabsratemedian=round(median(clabsiinc,na.rm=TRUE),digits=2),
                                                                                                             clabsisrate75pct=round(quantile(clabsiinc,probs=c(0.75),na.rm=TRUE),digits=2))
 
-saveRDS(bsidevadj_cvcasbsitable_bycountry,"cvcasbsitable.Rda")
+save_output_rds(bsidevadj_cvcasbsitable_bycountry,"cvcasbsitable.Rda")
 
 haiicu_unit_bsidevadj_crbsitable$cvcuse<-round(100*haiicu_unit_bsidevadj_crbsitable$unitexpdays/as.numeric(haiicu_unit_bsidevadj_crbsitable$NumPatDaysUnit2d),digits=2)
 
@@ -887,14 +811,14 @@ CRBSItable<-summarise(by_country,nricu=n(),nrpat=sum(adm,na.rm=TRUE),
                     crbsirate25pct=round(quantile(bsi_incdens,probs=c(0.25),na.rm=TRUE),digits=2),
                     crbsiratemedian=round(median(bsi_incdens,na.rm=TRUE),digits=2),
                     crbisrate75pct=round(quantile(bsi_incdens,probs=c(0.75),na.rm=TRUE),digits=2))
-saveRDS(CRBSItable,file="CRBSItable.Rda")
+save_output_rds(CRBSItable,file="CRBSItable.Rda")
 
 #BSI microbiology-----------------------------------
 
-micro<-read.csv("4.HAIICU$PT$INF$RES.csv") #load 4.HAIICU$Pt$Inf$Res.csv
-microlight<-read.csv("4.HAIICULIGHT$Deno$Inf$Res.csv") #load 4.HAIICULIGHT$Deno$Inf$Res.csv
-inf<-read.csv("3.HAIICU$PT$INF.csv") #load 3.HAIICU$Pt$Inf.csv
-inflight<-read.csv("3.HAIICULIGHT$Deno$Inf.csv") #load 3.HAIICULIGHT$Deno$Inf
+micro<-read_data_csv("4.HAIICU$PT$INF$RES.csv") #load 4.HAIICU$Pt$Inf$Res.csv
+microlight<-read_data_csv("4.HAIICULIGHT$Deno$Inf$Res.csv") #load 4.HAIICULIGHT$Deno$Inf$Res.csv
+inf<-read_data_csv("3.HAIICU$PT$INF.csv") #load 3.HAIICU$Pt$Inf.csv
+inflight<-read_data_csv("3.HAIICULIGHT$Deno$Inf.csv") #load 3.HAIICULIGHT$Deno$Inf
 BSI<-select(inf,RecordId,ParentId,InfectionSite)
 BSI<-filter(BSI,grepl("BSI|CRI3",BSI$InfectionSite))
 BSIlight<-select(inflight,RecordId,ParentId,InfectionSite)
@@ -911,10 +835,10 @@ BSImicrolight<-distinct(BSImicrolight)
 #ptBSImicro<-merge(BSImicro[,c("RecordId","InfectionSite","Antibiotic","ResultIsolate","SIR", "ParentId")],pt[,c("RecordId","ParentId")],by.x="Id",by.y="RecordId",all=FALSE)
 #ptBSImicrolight<-merge(BSImicrolight[,c("RecordId","InfectionSite","Antibiotic","ResultIsolate","SIR", "ParentId")],ptlight[,c("RecordId","ParentId")],by.x="Id",by.y="RecordId",all=FALSE)
 
-pt<-read.csv("2.HAIICU$PT.csv")
+pt<-read_data_csv("2.HAIICU$PT.csv")
 standard<-haiicu_level1
-lightdeno<-read.csv("2.HAIICULIGHT$Deno.csv")
-light<-read.csv("1.HAIICULIGHT.csv")
+lightdeno<-read_data_csv("2.HAIICULIGHT$Deno.csv")
+light<-read_data_csv("1.HAIICULIGHT.csv")
 
 ptBSImicro<-merge(BSImicro[,c("RecordId","InfectionSite","ResultIsolate", "ParentId")],pt[,c("RecordId","ParentId")],by.x="ParentId",by.y="RecordId",all=FALSE)
 
@@ -995,7 +919,7 @@ bsi_out <- build_top10_country_tables(BSItable_group_top10)
 summaryBSItable_top10 <- bsi_out$summary
 BSItable_group_totals <- bsi_out$totals
 BSItable_group_top10_pc <- bsi_out$pc
-saveRDS(BSItable_group_top10_pc,file="BSItable_group_top10_pc.Rda")
+save_output_rds(BSItable_group_top10_pc,file="BSItable_group_top10_pc.Rda")
 
 
 
@@ -1012,17 +936,17 @@ UTI_pat_prop<-round(sum(grepl("UTI",haiicu_pt_uti$InfectionSite))/sum(!haiicu_pt
 haiicu_unitstand_UTI<-select(haiicu_pt_inf,RecordId,Id,InfectionSite,InvasiveDevice)
 haiicu_unitstand_UTI<-filter(haiicu_unitstand_UTI,grepl("^UTI",haiicu_unitstand_UTI$InfectionSite))
 haiicu_unitstand_UTI<-rename(haiicu_unitstand_UTI,ParentId=Id)
-saveRDS(haiicu_pt_uti,"haiicu_pt_uti.Rda")
-saveRDS(haiicu_aggr_uti,"haiicu_aggr_uti.Rda")
+save_output_rds(haiicu_pt_uti,"haiicu_pt_uti.Rda")
+save_output_rds(haiicu_aggr_uti,"haiicu_aggr_uti.Rda")
 
 #UTI in light protocol
-haiicu_unitlight_UTI<-read.csv("3.HAIICULIGHT$Deno$Inf.csv") #load 3.HAIICULIGHT$Deno$Inf.csv
+haiicu_unitlight_UTI<-read_data_csv("3.HAIICULIGHT$Deno$Inf.csv") #load 3.HAIICULIGHT$Deno$Inf.csv
 haiicu_unitlight_UTI<-select(haiicu_unitlight_UTI,RecordId,ParentId,InfectionSite,InvasiveDevice)
 haiicu_unitlight_UTI<-filter(haiicu_unitlight_UTI,grepl("^UTI",haiicu_unitlight_UTI$InfectionSite))
 haiicu_unitlight_UTI[,'RecordId'] <- as.factor(as.character(haiicu_unitlight_UTI[,'RecordId']))
 haiicu_unitlight_UTI[,'ParentId'] <- as.factor(as.character(haiicu_unitlight_UTI[,'ParentId']))
 haiicu_unitall_UTI<-rbind(haiicu_unitstand_UTI,haiicu_unitlight_UTI)#merge standard and light UTI
-saveRDS(haiicu_unitall_UTI,file="haiicu_unitall_UTI.Rda")
+save_output_rds(haiicu_unitall_UTI,file="haiicu_unitall_UTI.Rda")
 
 
 #urinary catheter days estimation
@@ -1038,7 +962,7 @@ haiicu_unit_expuc<-filter(haiicu_unit_expuc,ReportingCountry!="FR",ReportingCoun
 #cauti device adjusted rate
 haiicu_unit_expuc<-haiicu_unit_expuc%>%filter(unitexpdays>9)
 haiicu_unit_expuc$utidevadj<-round(1000*haiicu_unit_expuc$UTI/haiicu_unit_expuc$unitexpdays,digits=2)
-saveRDS(haiicu_unit_expuc,"haiicu_unit_expuc.Rda")
+save_output_rds(haiicu_unit_expuc,"haiicu_unit_expuc.Rda")
 
 #catheter utilisation rate
 uc_rate<-round(mean(haiicu_unit_expuc$unitexpdays/as.numeric(haiicu_unit_expuc$NumPatDaysUnit2d),na.rm=TRUE)*1000,digits=2)
@@ -1050,14 +974,14 @@ haiicu_country_expuc<-haiicu_unit_expuc%>%select(ReportingCountry,unitexpdays,Nu
                       cauti75pct=round(quantile(utidevadj,probs=c(0.75),na.rm=TRUE),digits=2))
 haiicu_country_expuc$utilrate<-round(as.numeric(haiicu_country_expuc$countryexpdays)/as.numeric(haiicu_country_expuc$patientdays),digits=2)
 round(mean(haiicu_unit_expuc$unitexpdays,na.rm=TRUE)/mean(as.numeric(haiicu_unit_expuc$NumPatDaysUnit2d),na.rm=TRUE)*1000,digits=0)
-saveRDS(haiicu_country_expuc,"haiicu_country_expuc.Rda")
+save_output_rds(haiicu_country_expuc,"haiicu_country_expuc.Rda")
 
 #UTI microbiology--------------------------------
 
-micro<-read.csv("4.HAIICU$Pt$Inf$Res.csv") #load 4.HAIICU$Pt$Inf$Res.csv
-microlight<-read.csv("4.HAIICULIGHT$Deno$Inf$Res.csv") #load 4.HAIICULIGHT$Deno$Inf$Res.csv
-inf<-read.csv("3.HAIICU$PT$INF.csv") #load 3.HAIICU$Pt$Inf.csv
-inflight<-read.csv("3.HAIICULIGHT$Deno$Inf.csv") #load 3.HAIICULIGHT$Deno$Inf
+micro<-read_data_csv("4.HAIICU$Pt$Inf$Res.csv") #load 4.HAIICU$Pt$Inf$Res.csv
+microlight<-read_data_csv("4.HAIICULIGHT$Deno$Inf$Res.csv") #load 4.HAIICULIGHT$Deno$Inf$Res.csv
+inf<-read_data_csv("3.HAIICU$PT$INF.csv") #load 3.HAIICU$Pt$Inf.csv
+inflight<-read_data_csv("3.HAIICULIGHT$Deno$Inf.csv") #load 3.HAIICULIGHT$Deno$Inf
 UTI<-select(inf,RecordId,ParentId,InfectionSite)
 UTI<-filter(UTI,grepl("^UTI",UTI$InfectionSite))
 UTIlight<-select(inflight,RecordId,ParentId,InfectionSite)
@@ -1074,10 +998,10 @@ UTImicrolight<-distinct(UTImicrolight)
 #ptUTImicro<-merge(UTImicro[,c("RecordId","InfectionSite","ResultIsolate", "Id")],pt[,c("RecordId","ParentId")],by.x="Id",by.y="RecordId",all=FALSE)
 #ptUTImicrolight<-merge(UTImicrolight[,c("RecordId","InfectionSite","Antibiotic","ResultIsolate","SIR", "ParentId")],ptlight[,c("RecordId","ParentId")],by.x="Id",by.y="RecordId",all=FALSE)
 
-pt<-read.csv("2.HAIICU$PT.csv")
+pt<-read_data_csv("2.HAIICU$PT.csv")
 standard<-haiicu_level1
-lightdeno<-read.csv("2.HAIICULIGHT$Deno.csv")
-light<-read.csv("1.HAIICULIGHT.csv")
+lightdeno<-read_data_csv("2.HAIICULIGHT$Deno.csv")
+light<-read_data_csv("1.HAIICULIGHT.csv")
 
 ptUTImicro<-merge(UTImicro[,c("RecordId","InfectionSite","ResultIsolate", "ParentId")],pt[,c("RecordId","ParentId")],by.x="ParentId",by.y="RecordId",all=FALSE)
 ptUTImicro<-ptUTImicro[,-c(1)]
@@ -1158,7 +1082,7 @@ uti_out <- build_top10_country_tables(UTItable_group_top10)
 summaryUTItable_top10 <- uti_out$summary
 UTItable_group_totals <- uti_out$totals
 UTItable_group_top10_pc <- uti_out$pc
-saveRDS(UTItable_group_top10_pc,file="UTItable_group_top10_pc.Rda")
+save_output_rds(UTItable_group_top10_pc,file="UTItable_group_top10_pc.Rda")
 
 microlight[,'RecordId'] <- as.factor(as.character(microlight[,'RecordId']))
 microlight[,'ParentId'] <- as.factor(as.character(microlight[,'ParentId']))
@@ -1193,7 +1117,7 @@ resist<-resist%>%mutate(ReportingCountry=case_when(is.na(ReportingCountry) & Rec
                                       Antibiotic=case_when(ReportingCountry=="DE" & ResultIsolate=="STAAUR" & Antibiotic=="_NOTEST"~ "OXA", TRUE~Antibiotic))
 
 resist<-resist%>%filter(!is.na(ReportingCountry), ReportingCountry!="DE")
-saveRDS(resist,"resist.Rda")
+save_output_rds(resist,"resist.Rda")
 
 #resistance percentage by country and pathogen
 country_res<-resist%>%group_by(ReportingCountry)%>%summarise(
@@ -1230,15 +1154,15 @@ InfOutc_EU<-haiicu_pt_inf_all%>%group_by(InfectionOutcome)%>%filter(!is.na(Infec
   mutate(freq = n / sum(n))
 InfOutc<-haiicu_pt_inf_all%>%group_by(ReportingCountry,InfectionOutcome)%>%filter(!is.na(InfectionOutcome),InfectionOutcome!="N/A",InfectionOutcome!="UNK",InfectionOutcome!="")%>%summarise(n = n()) %>%
   mutate(freq = n / sum(n))%>%select(-n)%>%spread(InfectionOutcome,freq)
-saveRDS(InfOutc,"InfOutc.Rda")
+save_output_rds(InfOutc,"InfOutc.Rda")
 
 #unit data
-haiicu_level1<-read.csv("1.HAIICU.csv")
+haiicu_level1<-read_data_csv("1.HAIICU.csv")
 levels(haiicu_level1$ReportingCountry)<-c(levels(haiicu_level1$ReportingCountry),"IT-GiViTI","IT-SPIN-UTI")
 haiicu_level1$ReportingCountry[haiicu_level1$ReportingCountry=="IT"]<-haiicu_level1$DataSource[haiicu_level1$ReportingCountry=="IT"]#Replace IT with network name
 
 #exposure data####
-haiicuexp<-read.csv("haiicuexp_correct.csv")
+haiicuexp<-read_data_csv("haiicuexp_correct.csv")
 haiicuexp<-select(haiicuexp,RecordId,ParentId,DateExpStart, DateExpEnd,ExpType)
 haiicuexp <- haiicuexp %>% mutate(across(c(DateExpStart, DateExpEnd), parse_mixed_date))
 haiicuexp$expdays<-as.Date(haiicuexp$DateExpEnd,format="%Y-%m-%d")-as.Date(haiicuexp$DateExpStart,format="%Y-%m-%d")+1
@@ -1253,7 +1177,7 @@ ptexpuc<-expuc%>%select(ParentId,expdays)%>%group_by(ParentId)%>%summarise(expuc
 
 
 #merge patient infection and exposure data
-haiicu_pt_inf_all<-readRDS("haiicu_pt_inf_all.Rda")
+haiicu_pt_inf_all<-read_output_rds("haiicu_pt_inf_all.Rda")
 haiicu_pt_inf_all$BSI<-grepl("BSI|CRI3-CVC",haiicu_pt_inf_all$InfectionSite)
 haiicu_pt_inf_all$PN<-grepl("PN",haiicu_pt_inf_all$InfectionSite)
 haiicu_pt_inf_all$UTI<-grepl("UTI",haiicu_pt_inf_all$InfectionSite)
@@ -1387,8 +1311,8 @@ country_output_unit_inf_ncases<-by_country_inf_ncases%>%select(-UnitId,-unitcode
 EU_ref_inf<-unit_output_inf%>%select(-UnitId,-unitcode)%>%summarise(across(where(is.numeric),list(sum=sum,mean=mean,median=median,p25=p25,p75=p75)))
 
 #Indicators-------------------------------------
-# icu_deno<-read.csv("haiicu_deno.csv")
-# icu_deno_ind<-read.csv("haiicu_deno_ind.csv")
+# icu_deno<-read_data_csv("haiicu_deno.csv")
+# icu_deno_ind<-read_data_csv("haiicu_deno_ind.csv")
 # icu_deno_ind_spread<-select(icu_deno_ind,-RecordId)
 # icu_deno_ind_spread<-icu_deno_ind_spread%>%
 #               mutate(IndPcCompl=as.numeric(as.character(IndNumCompliant))/as.numeric(as.character(IndNumObservations)))%>%
@@ -1439,9 +1363,9 @@ icu_unit<-merge(haiicu_level1[,c("RecordId","NumAlcoholHandRubLiters","NumPatien
 #
 
 #Antibiotic use####
-ab<-read.csv("3.HAIICU$PT$AM.csv")
-pt<-read.csv("2.HAIICU$PT.csv")
-unit<-read.csv("1.HAIICU.csv")
+ab<-read_data_csv("3.HAIICU$PT$AM.csv")
+pt<-read_data_csv("2.HAIICU$PT.csv")
+unit<-read_data_csv("1.HAIICU.csv")
 ab<-select(ab,-RecordId)
 ab<-rename(ab,pt_id=ParentId)
 pt<-select(pt,RecordId,ParentId,DateUnitAdmission,DateUnitDischarge)
@@ -1457,7 +1381,7 @@ ab_pt$DateAntimicrobialStart<-as.Date(ab_pt$DateAntimicrobialStart)
 
 ab_pt<-filter(ab_pt,!is.na(DateAntimicrobialEnd))
 #write.csv(ab_pt,"ab_pt.csv") #save as csv for manual cleaning of false dates
-#ab_pt<-read.csv("ab_pt.csv") #load corrected file but needs to run as.Date functions again
+#ab_pt<-read_data_csv("ab_pt.csv") #load corrected file but needs to run as.Date functions again
 #ab_pt$DateAntimicrobialStart[ab_pt$DateAntimicrobialStart<ab_pt$DateUnitAdmission]<-ab_pt$DateUnitAdmission #intend to clean wrong dates but produces errors
 #ab_pt$DateAntimicrobialEnd[ab_pt$DateAntimicrobialEnd>ab_pt$DateUnitDischarge]<-ab_pt$DateUnitDischarge
 ab_pt$treatmdays<-ab_pt$DateAntimicrobialEnd-ab_pt$DateAntimicrobialStart+1
@@ -1508,8 +1432,8 @@ country_output_ab_indication<-country_ab_indication%>%select(-unit_id,-unitcode,
 
 
 #Microbiology
-micro<-read.csv("4.HAIICU$Pt$Inf$Res.csv")
-inf<-read.csv("3.HAIICU$Pt$inf.csv")
+micro<-read_data_csv("4.HAIICU$Pt$Inf$Res.csv")
+inf<-read_data_csv("3.HAIICU$Pt$inf.csv")
 inf<-select(inf,RecordId,ParentId,InfectionSite)
 PN<-filter(inf,grepl("PN",inf$InfectionSite))
 BSI<-filter(inf,grepl("BSI|CRI3-CVC",inf$InfectionSite))
@@ -1518,7 +1442,7 @@ PNmicro<-select(PNmicro,RecordId,ParentId,InfectionSite,ResultIsolate)
 PNmicro<-distinct(PNmicro)
 BSImicro<-merge(BSI[,c("RecordId","InfectionSite","ParentId")],micro[,c("Antibiotic","ResultIsolate","SIR","ParentId")],by.x="RecordId",by.y="ParentId",all=FALSE)
 BSImicro<-select(BSImicro,RecordId,ParentId,InfectionSite,ResultIsolate)
-pt<-read.csv("2.HAIICU$Pt.csv")
+pt<-read_data_csv("2.HAIICU$Pt.csv")
 
 ptPNmicro<-merge(PNmicro[,c("RecordId","InfectionSite","ResultIsolate", "ParentId")],pt[,c("RecordId","ParentId")],by.x="ParentId",by.y="RecordId",all=FALSE)
 ptPNmicro<-ptPNmicro[,-c(1)]
@@ -1615,10 +1539,10 @@ country_unit_table<-country_unit%>%summarise(N=n(), unit_size_median=median(as.n
                                              Spec_ounk=pct(UnitSpecialty=="O"|UnitSpecialty=="Unk"|UnitSpecialty=="NEU"|
                                                              UnitSpecialty=="BURN"|UnitSpecialty=="PED"|UnitSpecialty=="NEON",N)
                                              )
-saveRDS(country_unit_table,"country_unit_table.Rda")
+save_output_rds(country_unit_table,"country_unit_table.Rda")
 
 #exposure data-----
-haiicuexp<-read.csv("haiicuexp_correct.csv")
+haiicuexp<-read_data_csv("haiicuexp_correct.csv")
 haiicuexp<-select(haiicuexp,RecordId,ParentId,DateExpStart, DateExpEnd,ExpType)
 haiicuexp$expdays<-as.numeric(as.Date(haiicuexp$DateExpEnd,format="%Y-%m-%d")-as.Date(haiicuexp$DateExpStart,format="%Y-%m-%d")+1)
 expint<-filter(haiicuexp, ExpType=="INT")
@@ -1629,7 +1553,7 @@ ptexpint<-expint%>%select(ParentId,expdays)%>%group_by(ParentId)%>%summarise(exp
 ptexpcvc<-expcvc%>%select(ParentId,expdays)%>%group_by(ParentId)%>%summarise(expcvcdays=sum(expdays,na.rm=TRUE))
 ptexpuc<-expuc%>%select(ParentId,expdays)%>%group_by(ParentId)%>%summarise(expucdays=sum(expdays,na.rm=TRUE))
 
-haiicu_pt_inf_all<-readRDS("haiicu_pt_inf_all.Rda")
+haiicu_pt_inf_all<-read_output_rds("haiicu_pt_inf_all.Rda")
 haiicu_pt_inf_all$BSI<-grepl("BSI|CRI3-CVC",haiicu_pt_inf_all$InfectionSite)
 haiicu_pt_inf_all$PN<-grepl("PN",haiicu_pt_inf_all$InfectionSite)
 haiicu_pt_inf_all$UTI<-grepl("UTI",haiicu_pt_inf_all$InfectionSite)
@@ -1683,16 +1607,16 @@ country_demogr<-by_country_demogr%>%summarise(N_pat=n(),patdays=sum(as.numeric(l
                                                AntimicrUnit_pc=pct(AntimicrobialInUnit=="Y",N_pat),
                                                Outcome_D_pc=(prc(sum(OutcomeUnit=="D",na.rm=TRUE)/n()))
 )
-saveRDS(country_demogr,"country_demogr.Rda")
+save_output_rds(country_demogr,"country_demogr.Rda")
 
 
 #end of demographics 28/08/2017 ---------------------------------------------------------------
 
 #antibiotic use 28/08/2017---------------------------------------------------------------------
 
-ab<-read.csv("3.HAIICU$PT$AM.csv")
-pt<-read.csv("2.HAIICU$PT.csv")
-unit<-read.csv("1.HAIICU.csv")
+ab<-read_data_csv("3.HAIICU$PT$AM.csv")
+pt<-read_data_csv("2.HAIICU$PT.csv")
+unit<-read_data_csv("1.HAIICU.csv")
 levels(unit$ReportingCountry)<-c(levels(unit$ReportingCountry),"IT-GiViTI","IT-SPIN-UTI")
 unit$ReportingCountry[unit$ReportingCountry=="IT"]<-unit$DataSource[unit$ReportingCountry=="IT"]#Replace IT with network name
 
@@ -1780,15 +1704,15 @@ eu_ab_groups<-unit_ab_groups%>%summarise_at(vars(N_ab:treatmdays_tot,carb_td:pol
 
 country_ab_table<-country_ab_groups%>%select(ReportingCountry:polymyx_td_mean)
 eu_ab_table<-eu_ab_groups%>%select(treatmdays_tot_sum,carb_td_mean:polymyx_td_mean)
-saveRDS(country_ab_table,"country_ab_table.Rda")
-saveRDS(country_ab_ind,"country_ab_ind.Rda")
+save_output_rds(country_ab_table,"country_ab_table.Rda")
+save_output_rds(country_ab_ind,"country_ab_ind.Rda")
 
 #end of antibiotic use 28/08/2017---------------------------------------------------------------
 
 #structure and process indicators of antimicrobial stewardship and infection control-----------------------------
 
-deno_standard<-read.csv("2.HAIICU$DENOM.csv")
-deno_light<-read.csv("2.HAIICULIGHT$DENO.csv")
+deno_standard<-read_data_csv("2.HAIICU$DENOM.csv")
+deno_light<-read_data_csv("2.HAIICULIGHT$DENO.csv")
 deno<-rbind(deno_standard,deno_light)
 deno_units<-full_join(deno,select(haiicu_level1_all,
                                   RecordId, ReportingCountry,NumAlcoholHandRubLiters,
@@ -1827,12 +1751,12 @@ deno_7d$dupl<-duplicated(deno_7d)
 deno_7d<-deno_7d%>%filter(dupl==FALSE)
 country_deno_7d<-deno_7d%>%select(-ParentId)%>%group_by(ReportingCountry)%>%
   summarise(across(where(is.numeric),list(median=median),na.rm=TRUE))
-saveRDS(country_deno_7d,"country_deno_7d.Rda")
+save_output_rds(country_deno_7d,"country_deno_7d.Rda")
 
 #indicators assessed by chart review or direct observation---------
 
-deno_ind_standard<-read.csv("3.HAIICU$Denom$Ind.csv")
-deno_ind_light<-read.csv("3.HAIICULIGHT$DENO$IND.csv")
+deno_ind_standard<-read_data_csv("3.HAIICU$Denom$Ind.csv")
+deno_ind_light<-read_data_csv("3.HAIICULIGHT$DENO$IND.csv")
 deno_ind<-deno_ind_standard
 deno_ind<-rbind(deno_ind_standard,deno_ind_light)
 deno_ind<-full_join(deno_ind,select(deno, RecordId,ParentId),by=c("ParentId"="RecordId"))
@@ -1861,7 +1785,7 @@ deno_ind<-deno_ind%>%select(ParentId,ReportingCountry,IndNumCompliant_ASTREV72H,
 country_ind<-deno_ind%>%select(-ParentId)%>%group_by(ReportingCountry)%>%
   summarise(across(where(is.numeric),list(mean=mean),na.rm=TRUE),n_units=n())
 
-saveRDS(country_ind,"country_ind.Rda")
+save_output_rds(country_ind,"country_ind.Rda")
 
 
 #master dataframes
@@ -1915,7 +1839,7 @@ haiicudenscountr%>%
   summarise(medianinc=median(iapincintubdays,na.rm=TRUE))
 
 #logreg for the effect of antimicrobial on admission on HAI
-haiicu_pt_inf_all<-readRDS("haiicu_pt_inf_all.Rda")
+haiicu_pt_inf_all<-read_output_rds("haiicu_pt_inf_all.Rda")
 logregdata<-haiicu_pt_inf_all%>%filter(!ReportingCountry%in%c("FR","ES","IT-GiViTI"))%>%select(RecordId,ReportingCountry,Age, AntimicrobialAdmission, Gender,HasHAI, Intubation,OtherScoreValue,ImpairedImmunity,SapsII,TypeOfAdmission,los,OutcomeUnit,DateUnitAdmission,DateOfOnset)
 
 logregdata$lateHAI<-(logregdata$DateOfOnset>(logregdata$DateUnitAdmission+7))

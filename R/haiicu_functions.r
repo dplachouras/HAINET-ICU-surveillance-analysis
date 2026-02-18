@@ -8,6 +8,12 @@ p25<-function(x){quantile(x,c(0.25),na.rm=TRUE)}
 p75<-function(x){quantile(x,c(0.75),na.rm=TRUE)}
 
 
+read_data_csv <- function(file, ...) read.csv(file.path(DATA_DIR, file), ...)
+read_data_fread <- function(file, ...) data.table::fread(file.path(DATA_DIR, file), ...)
+read_output_rds <- function(file, ...) readRDS(file.path(OUTPUT_DIR, file), ...)
+save_output <- function(..., file) save(..., file = file.path(OUTPUT_DIR, file))
+save_output_rds <- function(object, file, ...) saveRDS(object, file = file.path(OUTPUT_DIR, file), ...)
+
 parse_mixed_date <- function(x) {
   x <- trimws(as.character(x))
   x[x == ""] <- NA_character_
