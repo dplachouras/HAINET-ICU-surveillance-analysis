@@ -22,8 +22,9 @@ website:
 
 format:
   html:
-    theme: cosmo
-    css: styles.scss
+    theme: 
+      - cosmo
+      - styles.scss
     toc: true
     toc-depth: 3
     code-fold: false
