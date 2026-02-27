@@ -10,6 +10,7 @@ repo_root <- rprojroot::find_root(
 )
 
 OUTPUT_YEAR <- "2023"
+REPORT_YEAR <- as.integer(OUTPUT_YEAR)
 OUTPUT_DIR <- file.path(repo_root, "outputs", OUTPUT_YEAR)
 
 source(file.path(repo_root, "R", "haiicu_functions.r"), encoding = "UTF-8")

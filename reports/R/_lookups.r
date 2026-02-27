@@ -48,7 +48,32 @@ var_label_lut <- c(
   meanPNinc = "Mean",
   pct25 = "25th percentile",
   median = "Median",
-  pct75 = "75th percentile"
+  pct75 = "75th percentile",
+  # participation / ICU characteristics
+  N = "ICUs (n)",
+  unit_size_median = "ICU size (median no. beds)",
+  Spec_med = "Medical",
+  Spec_sur = "Surgical",
+  Spec_mix = "Mixed",
+  Spec_coro = "Coronary",
+  Spec_ounk = "Other/unknown",
+  # patient demographics
+  N_pat = "Patients (n)",
+  patdays = "Patient-days (n)",
+  avg_los = "Average length of stay (days)",
+  Gender_F_pc = "Females (%)",
+  Age_median = "Median age (years)",
+  SapsII_median = "SAPS II score median",
+  Origin_HOSP_pc = "Patient from hospital (%)",
+  Trauma_pc = "Trauma (%)",
+  TypeAdm_med = "Medical",
+  TypeAdm_ssur = "Scheduled surgery",
+  TypeAdm_usur = "Urgent surgery",
+  Intub_pc = "Intubation (%)",
+  UrinCath_pc = "Urinary catheter (%)",
+  CVC_pc = "Central vascular catheter (%)",
+  ImpImmun_pc = "Impaired immunity (%)",
+  Outcome_D_pc = "Mortality (%)"
 )
 
 apply_gt_labels <- function(gt_tbl, data, lut = var_label_lut) {

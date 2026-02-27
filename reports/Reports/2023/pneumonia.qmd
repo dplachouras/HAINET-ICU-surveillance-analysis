@@ -79,7 +79,34 @@ gt_tbl <- PNinc_country_tbl_named |>
     title = "Pneumonia incidence density",
     unit = "(episodes per 1 000 patient-days)"
   )|>
-  style_gt_common(data = PNinc_country_tbl_named)
+  style_gt_common(data = PNinc_country_tbl_named)|>
+  # Add superscripts in row labels
+  gt::text_transform(
+    locations = gt::cells_body(
+      columns = ReportingCountry,
+      rows = ReportingCountry == "Germany"
+    ),
+    fn = function(x) paste0(x, "<sup>a</sup>")
+  ) |>
+  gt::text_transform(
+    locations = gt::cells_body(
+      columns = ReportingCountry,
+      rows = ReportingCountry == "Italy-GiViTI"
+    ),
+    fn = function(x) paste0(x, "<sup>b</sup>")
+  ) |>
+  gt::text_transform(
+    locations = gt::cells_body(
+      columns = ReportingCountry,
+      rows = ReportingCountry == "EU/EEA"
+    ),
+    fn = function(x) paste0("<strong>", x, "<sup>a</sup></strong>")
+  ) |>
+  # Bottom notes
+  gt::tab_source_note(gt::md("*Source: ECDC, HAI-Net data 2023.*")) |>
+  gt::tab_source_note(gt::md("*Percentiles: distribution of incidence per ICU.*")) |>
+  gt::tab_source_note(gt::md("<sup>a</sup> Patient-days from Germany include stays <2 days and are excluded from EU/EEA results.")) |>
+  gt::tab_source_note(gt::md("<sup>b</sup> For multiple pneumonia episodes, Italy-GiViTI records only the first episode."))
 gt_tbl
 
 ```
