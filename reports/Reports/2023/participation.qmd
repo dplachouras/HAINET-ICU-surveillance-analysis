@@ -1,0 +1,20 @@
+---
+title: "Participation in HAIICU 2023"
+format: html
+---
+
+
+<!--Participating units-->
+In `r median(allunits$DateUsedForStatistics)` , `r nlevels(allunits$ReportingCountry)` countries reported data from `r nlevels(allunits$HospitalIdGlobal)` hospitals and `r nlevels(allunits$UnitIdGlobal)` ICUs:
+```{r, echo=FALSE, comment=""}
+Total=sum
+ReportingCountries<-addmargins(table(allunits$Subject, allunits$ReportingCountry), 2, FUN=Total)
+ReportingCountries
+```
+The speciality of the participating ICUs were:
+```{r, echo=FALSE, comment=""}
+table(allunits$Subject, allunits$UnitSpecialty)
+```
+The median size of the participating ICUs was `r median(as.numeric(allunits$UnitSize),na.rm=TRUE)` beds ranging from  `r min(as.numeric(allunits$UnitSize),na.rm=TRUE)` to `r max(as.numeric(allunits$UnitSize),na.rm=TRUE)`.
+
+Of `r nrow(haiicu_pt_unit)` patients staying in an ICU for more than two days (patient-based data), `r haiicu_pt_inf_all%>%filter(hasHai==TRUE)%>%distinct(Id,.keep_all=TRUE)%>%nrow()` patients (`r round((haiicu_pt_inf_all%>%filter(hasHai==TRUE)%>%distinct(Id,.keep_all=TRUE)%>%nrow())/nrow(haiicu_pt_unit), digits=3) * 100`%) presented with at least one HAI.

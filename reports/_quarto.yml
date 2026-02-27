@@ -1,0 +1,38 @@
+project:
+  type: website
+
+website:
+  title: "HAIICU 2023"
+  navbar:
+    left:
+      - href: reports/2023/index.qmd
+        text: Overview
+      - href: reports/2023/participation.qmd
+        text: Participation
+      - href: reports/2023/pneumonia.qmd
+        text: Pneumonia
+      - href: reports/2023/bsi.qmd
+        text: BSI
+      - href: reports/2023/uti.qmd
+        text: UTI
+      - href: reports/2023/amr.qmd
+        text: AMR
+      - href: reports/2023/annex.qmd
+        text: Annex
+
+format:
+  html:
+    theme: cosmo
+    css: styles.scss
+    toc: true
+    toc-depth: 3
+    code-fold: false
+    df-print: paged
+
+execute:
+  execute-dir: project
+  echo: false
+  warning: false
+  message: false
+  cache: true
+  freeze: auto

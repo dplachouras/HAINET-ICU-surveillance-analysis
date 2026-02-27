@@ -244,8 +244,8 @@ PNinc_EU<-haiicuall2%>%filter(!ReportingCountry=="DE")%>%
 save_output_rds(PNinc_EU,file="PNinc_EU.Rda")
 BSIinc_EU<-haiicuall2%>%filter(!ReportingCountry=="DE")%>%summarise(n_BSI=sum(BSI+CRI3,na.rm=TRUE),
                                  n_NumPtDays=sum(NumPatDaysUnit2d,na.rm=TRUE),
-                                 BSIinc_EU=round(1000*(sum(BSI,na.rm=TRUE)+sum(CRI3,na.rm=TRUE))/sum(NumPatDaysUnit2d,na.rm=TRUE),digits=2),
-                                 meanBSIinc_EU=round(mean(1000*(BSI+CRI3)/NumPatDaysUnit2d,na.rm=TRUE),digits=2),
+                                 BSIinc=round(1000*(sum(BSI,na.rm=TRUE)+sum(CRI3,na.rm=TRUE))/sum(NumPatDaysUnit2d,na.rm=TRUE),digits=2),
+                                 meanBSIinc=round(mean(1000*(BSI+CRI3)/NumPatDaysUnit2d,na.rm=TRUE),digits=2),
                                  pct25=round(quantile(1000*(BSI+CRI3)/NumPatDaysUnit2d,probs=c(0.25),na.rm=TRUE),digits=2),
                                  median=round(quantile(1000*(BSI+CRI3)/NumPatDaysUnit2d,probs=c(0.5),na.rm=TRUE),digits=2),
                                  pct75=round(quantile(1000*(BSI+CRI3)/NumPatDaysUnit2d,probs=c(0.75),na.rm=TRUE),digits=2)
@@ -253,8 +253,8 @@ BSIinc_EU<-haiicuall2%>%filter(!ReportingCountry=="DE")%>%summarise(n_BSI=sum(BS
 save_output_rds(BSIinc_EU,file="BSIinc_EU.Rda")
 UTIinc_EU<-haiicuall2%>%filter(!ReportingCountry %in% c("DE","FR"))%>%summarise(n_UTI=sum(UTI,na.rm=TRUE),
                                  n_NumPtDays=sum(NumPatDaysUnit2d,na.rm=TRUE),
-                                 UTIinc_EU=round(1000*sum(UTI,na.rm=TRUE)/sum(NumPatDaysUnit2d,na.rm=TRUE),digits=2),
-                                 meanUTIinc_EU=round(mean(1000*UTI/NumPatDaysUnit2d,na.rm=TRUE),digits=2),
+                                 UTIinc=round(1000*sum(UTI,na.rm=TRUE)/sum(NumPatDaysUnit2d,na.rm=TRUE),digits=2),
+                                 meanUTIinc=round(mean(1000*UTI/NumPatDaysUnit2d,na.rm=TRUE),digits=2),
                                  pct25=round(quantile(1000*UTI/NumPatDaysUnit2d,probs=c(0.25),na.rm=TRUE),digits=2),
                                  median=round(quantile(1000*UTI/NumPatDaysUnit2d,probs=c(0.5),na.rm=TRUE),digits=2),
                                  pct75=round(quantile(1000*UTI/NumPatDaysUnit2d,probs=c(0.75),na.rm=TRUE),digits=2)
@@ -473,7 +473,7 @@ IAPtable<-summarise(by_country,
 #IAPtable<-bind_rows(IAPtable,eu_iap) #under development
 
 save_output_rds(IAPtable,file="IAPtable.Rda")
-
+save_output_rds(eu_iap,file="eu_iap.Rda")
 
 #pneumonia pathogens -------
 micro<-read_data_csv("4.HAIICU$PT$INF$RES.csv") #load 4.HAIICU$Pt$Inf$Res.csv
@@ -1869,12 +1869,12 @@ model_apach_late <- glm(lateHAI~AntimicrobialAdmissionYES+GenderMale+IntubationY
 summary(model_apach_late)
 
 #XGboost--------
-logregdata<-logregdata_apach%>%
-  select(HasHAIYES,AntimicrobialAdmissionYES,GenderMale,IntubationYES,ImpairedImmunityYES,TypeOfAdmissionSUR,los,OtherScoreValue)
+#logregdata<-logregdata_apach%>%
+#  select(HasHAIYES,AntimicrobialAdmissionYES,GenderMale,IntubationYES,ImpairedImmunityYES,TypeOfAdmissionSUR,los,OtherScoreValue)
 library(xgboost)
 library(caret)
 library(SHAPforxgboost)
-data<-logregdata_apach
+data<-logregdata%>%select(HasHAIYES,AntimicrobialAdmissionYES,GenderMale,IntubationYES,ImpairedImmunityYES,TypeOfAdmissionSUR,los)
 parts = createDataPartition(data$HasHAIYES, p = .7, list = F)
 train = data[parts, ]
 test = data[-parts, ]
@@ -1940,7 +1940,7 @@ plot(roc_obj, main=paste("AUC =", round(auc_value, 3)))
 avg_contributions <- colMeans(predict(final, xgb_test, predcontrib = TRUE))
 print(avg_contributions)
 
-shap_result <- shap.values(X_model = train_x, model = final)
+shap_result <- SHAPforxgboost::shap.values(X_model = train_x, model = final)
 shap_importance <- shap_result$mean_abs_shap
 feature_names <- colnames(train_x)
 names(shap_importance) <- feature_names
@@ -1986,3 +1986,4 @@ shap_values <- shap.values(xgb_model = final, X_train = train_x)
 shap_values$mean_shap_score
 shap_long <- shap.prep(xgb_model = final, X_train = train_x)
 shap.plot.summary(shap_long)
+

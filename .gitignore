@@ -1,3 +1,6 @@
 data/
 outputs/
-reports/
+reports/_site/
+reports/.quarto/
+reports/**/.quarto/
+reports/**/*.quarto_ipynb

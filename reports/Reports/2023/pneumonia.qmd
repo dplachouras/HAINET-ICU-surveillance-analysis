@@ -1,0 +1,41 @@
+---
+title: "ICU-acquired pneumonia in HAIICU 2023"
+format: html
+---
+
+## ICU-acquired pneumonia
+Of `r sum(grepl("PN",haiicu_pt_inf_all$InfectionSite))` cases of pneumonia reported, `r round(sum(haiicu_pt_inf_all$Intubation=="Y" & grepl("PN",haiicu_pt_inf_all$InfectionSite))/sum(grepl("PN",haiicu_pt_inf_all$InfectionSite)),digits=3)*100`% were associated with intubation. Among patients staying in an ICU for more than two days, `r round(sum(grepl("PN",haiicu_pt_inf_all$InfectionSite))/sum(!haiicu_pt_inf_all$dupl_pat)*100,digits=2)`% were affected by at least one episode pneumonia. 
+
+```{r, echo=FALSE, results='hide'}
+patient_days<-sum(as.numeric(haiicu_pt_inf_all$lengthofstay[! haiicu_pt_inf_all$dupl_pat]),na.rm=TRUE)
+pn<-haiicu_intub$PN
+pn_cases<-sum(pn,na.rm=TRUE)
+patient_days_all<-sum(as.numeric(haiicu_intub$NumPatDaysUnit2d),na.rm=TRUE)
+per_intubgroup<-group_by(haiicu_intub,intubgroup)
+PNinc_byintubgroup<-summarise(per_intubgroup,meanPNinc=round(mean(incdens[incdens!=Inf],na.rm=TRUE),digits=2))
+
+
+```
+
+The incidence of pneumonia was `r round(sum(grepl("PN", haiicu_pt_inf_all$InfectionSite),na.rm=TRUE)/(patient_days)*1000, digits=2)` episodes per 1000 patient days (Table 1).
+
+The mean incidence density per ICU was `r round(mean(haiicu_intub$incdens[haiicu_intub$incdens!=Inf],na.rm=TRUE), digits=2)` pneumonia episodes per 1 000 patient-days (ICU IQR:`r quantile(haiicu_intub$incdens,c(.25),na.rm=TRUE)`-`r round(quantile(haiicu_intub$incdens,c(.75),na.rm=TRUE),digits=2)` ), varying from `r PNinc_byintubgroup[1,"meanPNinc"]` in ICUs with less than 30% intubated patients to `r PNinc_byintubgroup[2,"meanPNinc"]` in ICUs with 30-59% intubated patients, and `r PNinc_byintubgroup[3,"meanPNinc"]` in ICUs with more than 60% intubated patients.
+
+```{r, echo=FALSE}
+kable(PNinc_country,format = "html")
+kable(PNinc_EU,format = "html")
+```
+
+In patient-based surveillance, the mean device-adjusted rate was `r round(mean(round(haiicudenscountr$iapincintubdays,digits=2)),digits=2)` intubation-associated pneumonia episodes
+per 1 000 intubation-days and varied between `r min(IAPtable$avgiaprate)` (`r IAPtable$ReportingCountry[IAPtable$avgiaprate==min(IAPtable$avgiaprate)]`), and `r max(IAPtable$avgiaprate)` per 1 000 intubation-days
+(`r IAPtable$ReportingCountry[IAPtable$avgiaprate==max(IAPtable$avgiaprate)]`) (Table 2).
+
+```{r, echo=FALSE}
+kable(IAPtable,format = "html")
+```
+ 
+ 
+The most frequently isolated microorganisms in ICU-acquired pneumonia episodes were  *`r PNtable_group_top10_pc$Isolate[PNtable_group_top10_pc$totalpc==max(PNtable_group_top10_pc$totalpc)]`*   followed by *`r PNtable_group_top10_pc$Isolate[2]`*, *`r PNtable_group_top10_pc$Isolate[3]`* and *`r PNtable_group_top10_pc$Isolate[4]`* (Table 3).
+
+
+`r kable(PNtable_group_top10_pc,format='html')` 
