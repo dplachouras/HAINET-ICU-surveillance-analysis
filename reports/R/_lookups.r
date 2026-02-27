@@ -23,19 +23,29 @@ label_country_columns <- function(df) {
 var_label_lut <- c(
   ReportingCountry = "Country/Network",
   n_BSI = "BSI episodes (n)",
+  n_PN = "Pneumonia episodes (n)",
+  n_IAP = "IAP episodes (n)",
   n_NumPtDays = "Patient-days (n)",
-  BSIinc = "BSI incidence per 1,000 patient-days",
   n_cvcdays = "Catheter-days (n)",
+  n_expdays = "Intubation-days (n)",
   cvcuse = "CVC use (catheter-days per 100 patient-days)",
+  intubuse = "Intubation use (intubation-days per 100 patient-days)",
   n_clabsi = "CLABSI episodes (n)",
   NumPatDaysUnit2d = "Patient-days",
   aggrinc = "Aggregated",
+  aggr_inc = "Aggregated",
   avgclabsirate = "Mean",
+  avgiaprate = "Mean",
   clabsirate25pct = "25th percentile",
+  iaprate25pct = "25th percentile",
   clabsiratemedian = "Median",
+  iapratemedian = "Median",
   clabsirate75pct = "75th percentile",
+  iaprate75pct = "75th percentile",
   BSIinc = "Aggregated",
+  PNinc = "Aggregated",
   meanBSIinc = "Mean",
+  meanPNinc = "Mean",
   pct25 = "25th percentile",
   median = "Median",
   pct75 = "75th percentile"
@@ -67,7 +77,7 @@ add_incidence_spanner <- function(
 inc_cols_std <- c("inc", "meanInc", "pct25", "median", "pct75")  # if standardized
 inc_cols_bsi <- c("BSIinc", "meanBSIinc", "pct25", "median", "pct75")
 inc_cols_pn <- c("PNinc", "meanPNinc", "pct25", "median", "pct75")
-inc_cols_iap <- c("IAPinc", "meanIAPinc", "pct25", "median", "pct75")
+inc_cols_iap <- c("aggr_inc", "avgiaprate", "iaprate25pct", "iapratemedian", "iaprate75pct")
 inc_cols_clabsi <- c("aggrinc", "avgclabsirate", "clabsirate25pct", "clabsiratemedian", "clabsirate75pct")
 inc_cols_uti <- c("UTIinc", "meanUTIinc", "pct25", "median", "pct75")   
 

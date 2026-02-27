@@ -235,8 +235,8 @@ save_output_rds(UTIinc_country,file="UTIinc_country.Rda")
 PNinc_EU<-haiicuall2%>%filter(!ReportingCountry=="DE")%>%
                       summarise(n_PN=sum(PN,na.rm=TRUE),
                                  n_NumPtDays=sum(NumPatDaysUnit2d,na.rm=TRUE),
-                                 PNinc_EU=round(1000*sum(PN,na.rm=TRUE)/sum(NumPatDaysUnit2d,na.rm=TRUE),digits=2),
-                                 meanPNinc_EU=round(mean(1000*PN/NumPatDaysUnit2d,na.rm=TRUE),digits=2),
+                                 PNinc=round(1000*sum(PN,na.rm=TRUE)/sum(NumPatDaysUnit2d,na.rm=TRUE),digits=2),
+                                 meanPNinc=round(mean(1000*PN/NumPatDaysUnit2d,na.rm=TRUE),digits=2),
                                  pct25=round(quantile(1000*PN/NumPatDaysUnit2d,probs=c(0.25),na.rm=TRUE),digits=2),
                                  median=round(quantile(1000*PN/NumPatDaysUnit2d,probs=c(0.5),na.rm=TRUE),digits=2),
                                  pct75=round(quantile(1000*PN/NumPatDaysUnit2d,probs=c(0.75),na.rm=TRUE),digits=2)
@@ -450,9 +450,9 @@ save_output_rds(haiicudenscountr,file="haiicuiapdens.Rda")
 
 #IAP table -------
 
-eu_iap<-haiicudenscountr%>%summarise(n_expdays=sum(as.numeric(expdays),na.rm=TRUE),
+eu_iap<-haiicudenscountr%>%summarise(n_IAP=sum(IAP,na.rm=TRUE),
+                                     n_expdays=sum(as.numeric(expdays),na.rm=TRUE),
                                      intubuse=round(mean(intubuse,na.rm=TRUE),digits=2),
-                                     n_IAP=sum(IAP,na.rm=TRUE),
                                      aggr_inc=round(1000*sum(IAP,na.rm=TRUE)/sum(as.numeric(expdays,na.rm=TRUE)),digits=2),
                                      avgiaprate=round(mean(iapincintubdays,na.rm=TRUE),digits=2),
                                      iaprate25pct=round(quantile(iapincintubdays,probs=c(0.25),na.rm=TRUE),digits=2),
@@ -460,11 +460,9 @@ eu_iap<-haiicudenscountr%>%summarise(n_expdays=sum(as.numeric(expdays),na.rm=TRU
                                      iaprate75pct=round(quantile(iapincintubdays,probs=c(0.75),na.rm=TRUE),digits=2))
 
 by_country<-group_by(haiicudenscountr,ReportingCountry)
-IAPtable<-summarise(by_country,
-                    avglos=round(mean(as.numeric(avglos),na.rm=TRUE), digits=2),
-                    intubuse=round(mean(as.numeric(intubuse),na.rm=TRUE),digits=2),
+IAPtable<-summarise(by_country,n_IAP=sum(IAP,na.rm=TRUE),
                     n_expdays=sum(as.numeric(expdays),na.rm=TRUE),
-                    n_IAP=sum(IAP,na.rm=TRUE),
+                    intubuse=round(mean(as.numeric(intubuse),na.rm=TRUE),digits=2),
                     aggr_inc=round(1000*sum(IAP,na.rm=TRUE)/sum(as.numeric(expdays,na.rm=TRUE)),digits=2),
                     avgiaprate=round(mean(iapincintubdays,na.rm=TRUE),digits=2),
                     iaprate25pct=round(quantile(iapincintubdays,probs=c(0.25),na.rm=TRUE),digits=2),

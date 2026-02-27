@@ -55,7 +55,10 @@ ggplot(bsi_plot_df, aes(x = country, y = rate)) +
 
 
 BSIinc_country_tbl_named <- BSIinc_country_tbl |>
-  label_country_values("ReportingCountry")
+  label_country_values("ReportingCountry")|>
+  mutate(.is_eu = ReportingCountry == "EU/EEA") |>
+  arrange(.is_eu, ReportingCountry) |>
+  select(-.is_eu)  
 ```
 
 ```{r}
@@ -76,12 +79,16 @@ gt_tbl
 
 ```
 
+## Central line-associated bloodstream infections
 In patient-based surveillance, the central vascular catheter (CVC) utilisation rate was on average `r round(mean(haiicu_unit_bsidevadj_totcritable$unitexpdays,na.rm=TRUE)/mean(as.numeric(haiicu_unit_bsidevadj_totcritable$NumPatDaysUnit2d[haiicu_unit_bsidevadj_totcritable$ReportingCountry!="LU"]),na.rm=TRUE)*1000,digits=0)` CVC-days per 1 000 patientdays.It was the lowest (`r min(haiicu_country_expcvc$utilrate)*1000`) in `r haiicu_country_expcvc$ReportingCountry[haiicu_country_expcvc$utilrate==min(haiicu_country_expcvc$utilrate)]` and the highest (`r max(haiicu_country_expcvc$utilrate[haiicu_country_expcvc$ReportingCountry!="LU"])*1000`) in `r haiicu_country_expcvc$ReportingCountry[haiicu_country_expcvc$utilrate==max(haiicu_country_expcvc$utilrate[haiicu_country_expcvc$ReportingCountry!="LU"])]`. The mean device-adjusted rate in patients staying in an ICU for more than two days was `r round(mean(unit_clabsi$clabsiinc, na.rm=TRUE),digits=2)` CVC-associated bloodstream infection episodes per 1 000 CVC-days (ICU IQR: `r quantile(unit_clabsi$clabsiinc,c(.25),na.rm=TRUE)`-`r quantile(unit_clabsi$clabsiinc,c(.75), na.rm=TRUE)`), varying from `r min(clabsi_bycountry$countrclabsiinc)` in `r clabsi_bycountry$ReportingCountry[clabsi_bycountry$countrclabsiinc==min(clabsi_bycountry$countrclabsiinc)]` to `r max(clabsi_bycountry$countrclabsiinc)` in `r clabsi_bycountry$ReportingCountry[clabsi_bycountry$countrclabsiinc==max(clabsi_bycountry$countrclabsiinc)]` (@tbl-clabsi-incidence). 
 
 ```{r, echo=FALSE}
 
 CLABSI_tbl_named <-CLABSI_tbl |>
-  label_country_values("ReportingCountry")
+  label_country_values("ReportingCountry")|>
+  mutate(.is_eu = ReportingCountry == "EU/EEA") |>
+  arrange(.is_eu, ReportingCountry) |>
+  select(-.is_eu)
 ```
 
 ```{r}
@@ -101,6 +108,7 @@ gt_tbl <- CLABSI_tbl_named |>
 gt_tbl
 ```
 
+## Microbiology of ICU-acquired bloodstream infections
 The most frequently isolated microorganisms in bloodstream infection episodes were  `r BSItable_group_top10_pc$Isolate[1]`   followed by `r BSItable_group_top10_pc$Isolate[2]`, `r BSItable_group_top10_pc$Isolate[3]` and `r BSItable_group_top10_pc$Isolate[4]` (@tbl-bsi-micro).
 
 

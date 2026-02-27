@@ -3,6 +3,19 @@ title: "ICU-acquired pneumonia in HAIICU 2023"
 format: html
 ---
 
+```{r}
+#| label: setup
+#| include: false
+#| cache: false
+
+library(dplyr)
+library(knitr)
+
+source("../../R/_report_setup.r")
+source("../../R/_lookups.r")
+
+
+```
 ## ICU-acquired pneumonia
 Of `r sum(grepl("PN",haiicu_pt_inf_all$InfectionSite))` cases of pneumonia reported, `r round(sum(haiicu_pt_inf_all$Intubation=="Y" & grepl("PN",haiicu_pt_inf_all$InfectionSite))/sum(grepl("PN",haiicu_pt_inf_all$InfectionSite)),digits=3)*100`% were associated with intubation. Among patients staying in an ICU for more than two days, `r round(sum(grepl("PN",haiicu_pt_inf_all$InfectionSite))/sum(!haiicu_pt_inf_all$dupl_pat)*100,digits=2)`% were affected by at least one episode pneumonia. 
 
@@ -17,25 +30,106 @@ PNinc_byintubgroup<-summarise(per_intubgroup,meanPNinc=round(mean(incdens[incden
 
 ```
 
-The incidence of pneumonia was `r round(sum(grepl("PN", haiicu_pt_inf_all$InfectionSite),na.rm=TRUE)/(patient_days)*1000, digits=2)` episodes per 1000 patient days (Table 1).
+The incidence of pneumonia was `r round(sum(grepl("PN", haiicu_pt_inf_all$InfectionSite),na.rm=TRUE)/(patient_days)*1000, digits=2)` episodes per 1000 patient days (@tbl-pn-incidence).  
+```{r}
+library(dplyr)
+library(ggplot2)
+library(scales)
 
-The mean incidence density per ICU was `r round(mean(haiicu_intub$incdens[haiicu_intub$incdens!=Inf],na.rm=TRUE), digits=2)` pneumonia episodes per 1 000 patient-days (ICU IQR:`r quantile(haiicu_intub$incdens,c(.25),na.rm=TRUE)`-`r round(quantile(haiicu_intub$incdens,c(.75),na.rm=TRUE),digits=2)` ), varying from `r PNinc_byintubgroup[1,"meanPNinc"]` in ICUs with less than 30% intubated patients to `r PNinc_byintubgroup[2,"meanPNinc"]` in ICUs with 30-59% intubated patients, and `r PNinc_byintubgroup[3,"meanPNinc"]` in ICUs with more than 60% intubated patients.
+bsi_plot_df <- PNinc_country %>%
+  transmute(
+    country = ReportingCountry,
+    rate = as.numeric(PNinc)
+  ) %>%
+  filter(!is.na(country), !is.na(rate)) %>%
+  arrange(rate) %>%
+  mutate(country = factor(country, levels = country))
 
-```{r, echo=FALSE}
-kable(PNinc_country,format = "html")
-kable(PNinc_EU,format = "html")
+ggplot(bsi_plot_df, aes(x = country, y = rate)) +
+  geom_segment(aes(xend = country, y = 0, yend = rate), linewidth = 0.7, color = "#9aa5b1") +
+  geom_point(size = 2.8, color = "#0b6e4f") +
+  coord_flip() +
+  scale_y_continuous(labels = label_number(accuracy = 0.01)) +
+  labs(
+    x = NULL,
+    y = "Pneumonia incidence per 1,000 patient-days",
+    title = "ICU-acquired pneumonia incidence by country"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(panel.grid.major.y = element_blank())
+
+
+PNinc_country_tbl_named <- PNinc_country_tbl |>
+  label_country_values("ReportingCountry")|>
+  mutate(.is_eu = ReportingCountry == "EU/EEA") |>
+  arrange(.is_eu, ReportingCountry) |>
+  select(-.is_eu)
 ```
 
+```{r}
+#| label: tbl-pn-incidence
+#| tbl-cap: "Pneumonia incidence"
+
+gt_tbl <- PNinc_country_tbl_named |>
+  gt::gt() |>
+  apply_gt_labels(PNinc_country_tbl_named) |>
+  add_incidence_spanner(
+    data = PNinc_country_tbl_named,
+    cols = inc_cols_pn,
+    title = "Pneumonia incidence density",
+    unit = "(episodes per 1 000 patient-days)"
+  )|>
+  style_gt_common(data = PNinc_country_tbl_named)
+gt_tbl
+
+```
+
+
+The mean incidence density per ICU was `r round(mean(haiicu_intub$incdens[haiicu_intub$incdens!=Inf],na.rm=TRUE), digits=2)` pneumonia episodes per 1 000 patient-days (ICU IQR:`r quantile(haiicu_intub$incdens,c(.25),na.rm=TRUE)`-`r round(quantile(haiicu_intub$incdens,c(.75),na.rm=TRUE),digits=2)` ), varying from `r as.numeric(PNinc_byintubgroup[1,"meanPNinc"])` in ICUs with less than 30% intubated patients to `r as.numeric(PNinc_byintubgroup[2,"meanPNinc"]) ` in ICUs with 30-59% intubated patients, and `r as.numeric(PNinc_byintubgroup[3,"meanPNinc"])` in ICUs with more than 60% intubated patients.
+
+
+## Intubation-associated pneumonia
 In patient-based surveillance, the mean device-adjusted rate was `r round(mean(round(haiicudenscountr$iapincintubdays,digits=2)),digits=2)` intubation-associated pneumonia episodes
 per 1 000 intubation-days and varied between `r min(IAPtable$avgiaprate)` (`r IAPtable$ReportingCountry[IAPtable$avgiaprate==min(IAPtable$avgiaprate)]`), and `r max(IAPtable$avgiaprate)` per 1 000 intubation-days
-(`r IAPtable$ReportingCountry[IAPtable$avgiaprate==max(IAPtable$avgiaprate)]`) (Table 2).
+(`r IAPtable$ReportingCountry[IAPtable$avgiaprate==max(IAPtable$avgiaprate)]`) (@tbl-iap-incidence).
 
 ```{r, echo=FALSE}
-kable(IAPtable,format = "html")
+
+IAP_tbl_named <-IAP_tbl |>
+  label_country_values("ReportingCountry")|>
+  mutate(.is_eu = ReportingCountry == "EU/EEA") |>
+  arrange(.is_eu, ReportingCountry) |>
+  select(-.is_eu)
+```
+
+```{r}
+#| label: tbl-iap-incidence
+#| tbl-cap: "Intubation-associated pneumonia incidence"
+
+gt_tbl <- IAP_tbl_named |>
+  gt::gt() |>
+  apply_gt_labels(IAP_tbl_named) |>
+  add_incidence_spanner(
+    data = IAP_tbl_named,
+    cols = inc_cols_iap,
+    title = "IAP incidence density",
+    unit = "(episodes per 1 000 intubation-days)"
+  )|>
+  style_gt_common(data = IAP_tbl_named)
+gt_tbl
 ```
  
+## Microbiology of ICU-acquired pneumonia
+The most frequently isolated microorganisms in ICU-acquired pneumonia episodes were *`r PNtable_group_top10_pc$Isolate[1]`*, 
+followed by *`r PNtable_group_top10_pc$Isolate[2]`*, *`r PNtable_group_top10_pc$Isolate[3]`* and *`r PNtable_group_top10_pc$Isolate[4]`* (@tbl-pn-micro).
+
+```{r} 
+#| label: tbl-pn-micro 
+#| tbl-cap: "Distribution of the 10 most frequently isolated microorganisms in ICU-acquired pneumonia  episodes by country/network"
+#| 
+PNtable_group_top10_pc %>%
+  label_country_columns() %>%
+  gt::gt()
+```
+
  
-The most frequently isolated microorganisms in ICU-acquired pneumonia episodes were  *`r PNtable_group_top10_pc$Isolate[PNtable_group_top10_pc$totalpc==max(PNtable_group_top10_pc$totalpc)]`*   followed by *`r PNtable_group_top10_pc$Isolate[2]`*, *`r PNtable_group_top10_pc$Isolate[3]`* and *`r PNtable_group_top10_pc$Isolate[4]`* (Table 3).
-
-
-`r kable(PNtable_group_top10_pc,format='html')` 
