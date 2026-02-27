@@ -22,17 +22,6 @@ n_bsi <- nrow(haiicu_unitall_bsi)
 ## ICU-acquired blood stream infections
 A total of `r sum(grepl("BSI|CRI3",haiicu_pt_inf_all$InfectionSite))` cases of ICU-acquired bloodstream infection were reported. On average, ICU-acquired blood stream infections occurred in `r round(sum(grepl("BSI|CRI3",haiicu_pt_inf_all$InfectionSite))/sum(!haiicu_pt_inf_all$dupl_pat)*100,digits=2)`% of patients staying in an ICU for more than two days. The mean incidence density per ICU was `r round((mean(haiicuall2$BSI_incdens,na.rm=TRUE)),digits=2)` bloodstream infection episodes per 1 000 patient-days (ICU IQR: `r round(quantile(haiicuall2$BSI_incdens,c(.25),na.rm=TRUE),digits=2)`-`r round(quantile(haiicuall2$BSI_incdens,c(.75),na.rm=TRUE),digits=2)`)(Table 4).The mean incidence density per ICU was `r round(sum(haiicu_aggr$PRBSI,na.rm=TRUE)/(sum(as.numeric(haiicu_aggr$NumPatDaysUnit2d),na.rm=TRUE))*1000,digits=2)` primary bloodstream infection episodes per 1 000 patient-days (ICU IQR: `r quantile(haiicu_aggr$prbsi_incdens,c(.25),na.rm=TRUE)`-`r round(quantile(haiicu_aggr$prbsi_incdens,c(.75),na.rm=TRUE),digits=2)`). Bloodstream infections were catheter-related in `r round((sum(grepl("^C",haiicu_unitall_bsi$BSIOrigin))+sum(haiicu_unitall_bsi$InfectionSite=="CRI3"))/n_bsi * 100,digits=2)`% of cases, secondary to another infection in `r round(sum(grepl("^S",haiicu_unitall_bsi$BSIOrigin))/n_bsi * 100,digits=2)`% of cases, and of unknown origin in `r round(sum(grepl("^$|UO|UNK",haiicu_unitall_bsi$BSIOrigin))/n_bsi * 100,digits=2)`% of cases. When the bloodstream infection was secondary to another infection, the primary infection site was pulmonary in `r round(sum(grepl("S-PUL",haiicu_unitall_bsi$BSIOrigin))/sum(grepl("S",haiicu_unitall_bsi$BSIOrigin))*100,digits=2)`%, gastrointestinal (`r round(sum(grepl("S-DIG",haiicu_unitall_bsi$BSIOrigin))/sum(grepl("S",haiicu_unitall_bsi$BSIOrigin))*100,digits=2)`%), the urinary tract (`r round(sum(grepl("S-UTI",haiicu_unitall_bsi$BSIOrigin))/sum(grepl("S",haiicu_unitall_bsi$BSIOrigin))*100,digits=2)`%), a surgical site (`r round(sum(grepl("S-SSI",haiicu_unitall_bsi$BSIOrigin))/sum(grepl("S",haiicu_unitall_bsi$BSIOrigin))*100,digits=2)`%), skin and soft tissues (`r round(sum(grepl("S-SST",haiicu_unitall_bsi$BSIOrigin))/sum(grepl("S",haiicu_unitall_bsi$BSIOrigin))*100,digits=2)`%), and other in the remaining `r round(sum(grepl("S-OTH",haiicu_unitall_bsi$BSIOrigin))/sum(grepl("S",haiicu_unitall_bsi$BSIOrigin))*100,digits=2)`%. 
 
-```{r, echo=FALSE}
-library(gt)
-
-BSIinc_country %>%
-  label_country_values("ReportingCountry") %>%
-  gt::gt() %>%
-  gt::cols_label(ReportingCountry = "Country")
-
-kable(BSIinc_country,format = "html")
-kable(BSIinc_EU,format = "html")
-```
 ## Country incidence
 
 ::: {.panel-tabset}
@@ -73,9 +62,9 @@ gt_tbl <- BSIinc_country_tbl |>
     cols = inc_cols_bsi,
     title = "BSI incidence density",
     unit = "(episodes per 1 000 patient-days)"
-  )
+  )|>
+  style_gt_common(data = CLABSI_tbl)
 gt_tbl
-gt::gt(BSIinc_EU)
 
 ```
 
@@ -90,7 +79,8 @@ gt_tbl <- CLABSI_tbl |>
     cols = inc_cols_clabsi,
     title = "CLABSI incidence density",
     unit = "(episodes per 1 000 CVC-days)"
-  )
+  )  |>
+  style_gt_common(data = CLABSI_tbl)
 gt_tbl
 ```
 

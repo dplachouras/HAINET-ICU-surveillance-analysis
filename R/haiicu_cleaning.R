@@ -778,28 +778,27 @@ save_output_rds(bsidevadj_cri3table_bycountry,"cri3table.Rda")
 
 #CLABSI incidence------------------
 
-eu_cvcasbsi<-haiicu_unit_bsidevadj_clabsitable%>%summarise(nricu=n(),
-                                                            n_cvcdays=sum(unitexpdays,na.rm=TRUE),
+eu_cvcasbsi<-haiicu_unit_bsidevadj_clabsitable%>%summarise(n_cvcdays=sum(unitexpdays,na.rm=TRUE),
                                                             cvcuse=round(1000*mean(unitexpdays,na.rm=TRUE)/mean(as.numeric(NumPatDaysUnit2d),na.rm=TRUE),digits=0),
                                                             n_clabsi=sum(CVCASBSI,na.rm=TRUE),
                                                             aggrinc=round(1000*sum(CVCASBSI,na.rm=TRUE)/sum(unitexpdays,na.rm=TRUE),digits=2),
                                                             avgclabsirate=round(mean(clabsiinc,na.rm=TRUE),digits=2),
                                                             clabsirate25pct=round(quantile(clabsiinc,probs=c(0.25),na.rm=TRUE),digits=2),
-                                                            clabbsiratemedian=round(median(clabsiinc,na.rm=TRUE),digits=2),
-                                                            clabisrate75pct=round(quantile(clabsiinc,probs=c(0.75),na.rm=TRUE),digits=2))
+                                                            clabsiratemedian=round(median(clabsiinc,na.rm=TRUE),digits=2),
+                                                            clabsirate75pct=round(quantile(clabsiinc,probs=c(0.75),na.rm=TRUE),digits=2))
 
 
-bsidevadj_cvcasbsitable_bycountry<-haiicu_unit_bsidevadj_clabsitable%>%group_by(ReportingCountry)%>%summarise(nricu=n(),
-                                                                                                            cvcexpdays=sum(unitexpdays,na.rm=TRUE),
+bsidevadj_cvcasbsitable_bycountry<-haiicu_unit_bsidevadj_clabsitable%>%group_by(ReportingCountry)%>%summarise(n_cvcdays=sum(unitexpdays,na.rm=TRUE),
                                                                                                             cvcuse=round(1000*mean(unitexpdays,na.rm=TRUE)/mean(as.numeric(lengthofstay),na.rm=TRUE),digits=0),
                                                                                                             n_clabsi=sum(CVCASBSI,na.rm=TRUE),
                                                                                                             aggrinc=round(1000*sum(CVCASBSI,na.rm=TRUE)/sum(unitexpdays,na.rm=TRUE),digits=2),
                                                                                                             avgclabsirate=round(mean(clabsiinc,na.rm=TRUE),digits=2),
                                                                                                             clabsirate25pct=round(quantile(clabsiinc,probs=c(0.25),na.rm=TRUE),digits=2),
-                                                                                                            clabsratemedian=round(median(clabsiinc,na.rm=TRUE),digits=2),
-                                                                                                            clabsisrate75pct=round(quantile(clabsiinc,probs=c(0.75),na.rm=TRUE),digits=2))
+                                                                                                            clabsiratemedian=round(median(clabsiinc,na.rm=TRUE),digits=2),
+                                                                                                            clabsirate75pct=round(quantile(clabsiinc,probs=c(0.75),na.rm=TRUE),digits=2))
 
 save_output_rds(bsidevadj_cvcasbsitable_bycountry,"cvcasbsitable.Rda")
+save_output_rds(eu_cvcasbsi,"eu_cvcasbsi.Rda")
 
 haiicu_unit_bsidevadj_crbsitable$cvcuse<-round(100*haiicu_unit_bsidevadj_crbsitable$unitexpdays/as.numeric(haiicu_unit_bsidevadj_crbsitable$NumPatDaysUnit2d),digits=2)
 
