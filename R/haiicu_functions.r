@@ -10,7 +10,26 @@ p75<-function(x){quantile(x,c(0.75),na.rm=TRUE)}
 
 read_data_csv <- function(file, ...) read.csv(file.path(DATA_DIR, file), ...)
 read_data_fread <- function(file, ...) data.table::fread(file.path(DATA_DIR, file), ...)
-read_output_rds <- function(file, ...) readRDS(file.path(OUTPUT_DIR, file), ...)
+read_output_rds <- function(file, dir = OUTPUT_DIR, envir = new.env(), ...) {
+  path <- file.path(dir, file)
+  if (!file.exists(path)) stop("File not found: ", path)
+
+  tryCatch(
+    readRDS(path, ...),
+    error = function(e) {
+      vars <- load(path, envir = envir)
+      if (length(vars) == 1) {
+        return(envir[[vars]])
+      }
+      return(mget(vars, envir = envir))
+    }
+  )
+}
+load_output_rds <- function(file, ...) {  
+  e <- new.env()  
+  load(file.path(OUTPUT_DIR, file), envir = e) 
+   get(ls(e)[1], envir = e)
+   }
 save_output <- function(..., file) save(..., file = file.path(OUTPUT_DIR, file))
 save_output_rds <- function(object, file, ...) saveRDS(object, file = file.path(OUTPUT_DIR, file), ...)
 

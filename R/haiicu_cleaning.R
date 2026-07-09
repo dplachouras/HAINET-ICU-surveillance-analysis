@@ -1566,6 +1566,7 @@ haiicu_iap<-merge(haiicu_pt_inf_all[,c("Id","RecordId","UnitId","hasHai","Infect
                   haiicuexp[,c("ParentId","ExpType","DateExpStart","DateExpEnd")],by.x="Id",by.y="ParentId")
 haiicu_iap<-filter(haiicu_iap,grepl("PN",InfectionSite))
 haiicu_iap<-filter(haiicu_iap,ExpType=="INT")
+save_output_rds(haiicu_pt_inf_all,"haiicu_pt_inf_all_full.Rda")
 
 #haiicu_iap<-haiicu_iap%>%group_by(Id)%>%mutate(dateofonsetprev=lag(DateOfOnset))#added on 13/11/2017 to address cases with multiple reporting of the same infection
 #haiicu_iap<-haiicu_iap%>%group_by(Id)%>%mutate(diffdateofonset=as.numeric(as.Date(DateOfOnset)-as.numeric(as.Date(dateofonsetprev))))
@@ -1580,6 +1581,7 @@ haiicu_pt_inf_all<-merge(haiicu_pt_inf_all,haiicu_iap,by="RecordId",all.x=TRUE)
 
 haiicu_pt_inf_all<-merge(haiicu_pt_inf_all,haiicu_cvcasbsi[,c("RecordId","clabsi")],by="RecordId",all=TRUE)
 haiicu_pt_inf_all<-haiicu_pt_inf_all%>%unique()
+saveRDS(haiicu_pt_inf_all,"haiicu_pt_inf_all_full.Rda")
 #iap exclude if dates of onset too close (<8 days)
 #haiicu_pt_inf_all<-haiicu_pt_inf_all%>%group_by(Id)%>%mutate(dateofonsetprev=lag(DateOfOnset))
 #haiicu_pt_inf_all<-haiicu_pt_inf_all%>%group_by(Id)%>%mutate(diffdateofonset=as.numeric(as.Date(DateOfOnset)-as.numeric(as.Date(dateofonsetprev))))
