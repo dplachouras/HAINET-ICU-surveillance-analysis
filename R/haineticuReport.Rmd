@@ -3,9 +3,8 @@ title: "HAIICU2023"
 author: "DP"
 date: "8 June 2025"
 output:
-  html_document: default
+  word_document: default
 ---
-
 
 **HAIICU 2023 Report**
 
@@ -14,7 +13,28 @@ output:
 library(dplyr)
 library(knitr)
 library(here)
+library(flextable)
 
+make_report_table <- function(x, caption = NULL, font_size = 8, width = 0.9) {
+  x <- as.data.frame(x)
+
+  if (knitr::is_html_output()) {
+    return(knitr::kable(x, caption = caption, format = "html"))
+  }
+
+  width <- min(max(width, 0.1), 1.0)
+
+  ft <- flextable::flextable(x)
+  ft <- flextable::theme_vanilla(ft)
+  ft <- flextable::set_table_properties(ft, width = width, layout = "autofit")
+  ft <- flextable::autofit(ft)
+  ft <- flextable::fontsize(ft, size = font_size, part = "all")
+  ft <- flextable::align(ft, align = "left", part = "all")
+  if (!is.null(caption)) {
+    ft <- flextable::set_caption(ft, caption = caption)
+  }
+  ft
+}
 
 source(here("R", "haiicu_functions.r")) 
 year <- Sys.getenv("HAINET_YEAR", unset = "2023")
@@ -104,45 +124,45 @@ The incidence of pneumonia was `r round(sum(grepl("PN", haiicu_pt_inf_all$Infect
 
 The mean incidence density per ICU was `r round(mean(haiicu_intub$incdens[haiicu_intub$incdens!=Inf],na.rm=TRUE), digits=2)` pneumonia episodes per 1 000 patient-days (ICU IQR:`r quantile(haiicu_intub$incdens,c(.25),na.rm=TRUE)`-`r round(quantile(haiicu_intub$incdens,c(.75),na.rm=TRUE),digits=2)` ), varying from `r PNinc_byintubgroup[1,"meanPNinc"]` in ICUs with less than 30% intubated patients to `r PNinc_byintubgroup[2,"meanPNinc"]` in ICUs with 30-59% intubated patients, and `r PNinc_byintubgroup[3,"meanPNinc"]` in ICUs with more than 60% intubated patients.
 
-```{r, echo=FALSE}
-kable(PNinc_country,format = "html")
-kable(PNinc_EU,format = "html")
+```{r, echo=FALSE, results='asis'}
+make_report_table(PNinc_country, caption = "Pneumonia incidence by country")
+make_report_table(PNinc_EU, caption = "Pneumonia incidence in the EU")
 ```
 
 In patient-based surveillance, the mean device-adjusted rate was `r round(mean(round(haiicudenscountr$iapincintubdays,digits=2)),digits=2)` intubation-associated pneumonia episodes
 per 1 000 intubation-days and varied between `r min(IAPtable$avgiaprate)` (`r IAPtable$ReportingCountry[IAPtable$avgiaprate==min(IAPtable$avgiaprate)]`), and `r max(IAPtable$avgiaprate)` per 1 000 intubation-days
 (`r IAPtable$ReportingCountry[IAPtable$avgiaprate==max(IAPtable$avgiaprate)]`) (Table 2).
 
-```{r, echo=FALSE}
-kable(IAPtable,format = "html")
+```{r, echo=FALSE, results='asis'}
+make_report_table(IAPtable, caption = "Intubation-associated pneumonia table")
 ```
  
  
 The most frequently isolated microorganisms in ICU-acquired pneumonia episodes were  *`r PNtable_group_top10_pc$Isolate[PNtable_group_top10_pc$totalpc==max(PNtable_group_top10_pc$totalpc)]`*   followed by *`r PNtable_group_top10_pc$Isolate[2]`*, *`r PNtable_group_top10_pc$Isolate[3]`* and *`r PNtable_group_top10_pc$Isolate[4]`* (Table 3).
 
 
-`r kable(PNtable_group_top10_pc,format='html')` 
+`r make_report_table(PNtable_group_top10_pc, caption = 'Top microorganisms in pneumonia episodes')` 
 
 
 ## ICU-acquired blood stream infections
 A total of `r sum(grepl("BSI|CRI3",haiicu_pt_inf_all$InfectionSite))` cases of ICU-acquired bloodstream infection were reported. On average, ICU-acquired blood stream infections occurred in `r round(sum(grepl("BSI|CRI3",haiicu_pt_inf_all$InfectionSite))/sum(!haiicu_pt_inf_all$dupl_pat)*100,digits=2)`% of patients staying in an ICU for more than two days. The mean incidence density per ICU was `r round((mean(haiicuall2$BSI_incdens,na.rm=TRUE)),digits=2)` bloodstream infection episodes per 1 000 patient-days (ICU IQR: `r round(quantile(haiicuall2$BSI_incdens,c(.25),na.rm=TRUE),digits=2)`-`r round(quantile(haiicuall2$BSI_incdens,c(.75),na.rm=TRUE),digits=2)`)(Table 4).The mean incidence density per ICU was `r round(sum(haiicu_aggr$PRBSI,na.rm=TRUE)/(sum(as.numeric(haiicu_aggr$NumPatDaysUnit2d),na.rm=TRUE))*1000,digits=2)` primary bloodstream infection episodes per 1 000 patient-days (ICU IQR: `r quantile(haiicu_aggr$prbsi_incdens,c(.25),na.rm=TRUE)`-`r round(quantile(haiicu_aggr$prbsi_incdens,c(.75),na.rm=TRUE),digits=2)`). Bloodstream infections were catheter-related in `r round((sum(grepl("^C",haiicu_unitall_bsi$BSIOrigin))+sum(haiicu_unitall_bsi$InfectionSite=="CRI3"))/summarise(haiicu_unitall_bsi,n=n())*100,digits=2)`% of cases, secondary to another infection in `r round(sum(grepl("^S",haiicu_unitall_bsi$BSIOrigin))/summarise(haiicu_unitall_bsi,n=n())*100,digits=2)`% of cases, and of unknown origin in `r round(sum(grepl("^$|UO|UNK",haiicu_unitall_bsi$BSIOrigin))/summarise(haiicu_unitall_bsi,n=n())*100,digits=2)`% of cases. When the bloodstream infection was secondary to another infection, the primary infection site was pulmonary in `r round(sum(grepl("S-PUL",haiicu_unitall_bsi$BSIOrigin))/sum(grepl("S",haiicu_unitall_bsi$BSIOrigin))*100,digits=2)`%, gastrointestinal (`r round(sum(grepl("S-DIG",haiicu_unitall_bsi$BSIOrigin))/sum(grepl("S",haiicu_unitall_bsi$BSIOrigin))*100,digits=2)`%), the urinary tract (`r round(sum(grepl("S-UTI",haiicu_unitall_bsi$BSIOrigin))/sum(grepl("S",haiicu_unitall_bsi$BSIOrigin))*100,digits=2)`%), a surgical site (`r round(sum(grepl("S-SSI",haiicu_unitall_bsi$BSIOrigin))/sum(grepl("S",haiicu_unitall_bsi$BSIOrigin))*100,digits=2)`%), skin and soft tissues (`r round(sum(grepl("S-SST",haiicu_unitall_bsi$BSIOrigin))/sum(grepl("S",haiicu_unitall_bsi$BSIOrigin))*100,digits=2)`%), and other in the remaining `r round(sum(grepl("S-OTH",haiicu_unitall_bsi$BSIOrigin))/sum(grepl("S",haiicu_unitall_bsi$BSIOrigin))*100,digits=2)`%. 
 
-```{r, echo=FALSE}
-kable(BSIinc_country,format = "html")
-kable(BSIinc_EU,format = "html")
+```{r, echo=FALSE, results='asis'}
+make_report_table(BSIinc_country, caption = "BSI incidence by country")
+make_report_table(BSIinc_EU, caption = "BSI incidence in the EU")
 ```
 
 
 In patient-based surveillance, the central vascular catheter (CVC) utilisation rate was on average `r round(mean(haiicu_unit_bsidevadj_totcritable$unitexpdays,na.rm=TRUE)/mean(as.numeric(haiicu_unit_bsidevadj_totcritable$NumPatDaysUnit2d[haiicu_unit_bsidevadj_totcritable$ReportingCountry!="LU"]),na.rm=TRUE)*1000,digits=0)` CVC-days per 1 000 patientdays.It was the lowest (`r min(haiicu_country_expcvc$utilrate)*1000`) in `r haiicu_country_expcvc$ReportingCountry[haiicu_country_expcvc$utilrate==min(haiicu_country_expcvc$utilrate)]` and the highest (`r max(haiicu_country_expcvc$utilrate[haiicu_country_expcvc$ReportingCountry!="LU"])*1000`) in `r haiicu_country_expcvc$ReportingCountry[haiicu_country_expcvc$utilrate==max(haiicu_country_expcvc$utilrate[haiicu_country_expcvc$ReportingCountry!="LU"])]`. The mean device-adjusted rate in patients staying in an ICU for more than two days was `r round(mean(unit_clabsi$clabsiinc, na.rm=TRUE),digits=2)` CVC-associated bloodstream infection episodes per 1 000 CVC-days (ICU IQR: `r quantile(unit_clabsi$clabsiinc,c(.25),na.rm=TRUE)`-`r quantile(unit_clabsi$clabsiinc,c(.75), na.rm=TRUE)`), varying from `r min(clabsi_bycountry$countrclabsiinc)` in `r clabsi_bycountry$ReportingCountry[clabsi_bycountry$countrclabsiinc==min(clabsi_bycountry$countrclabsiinc)]` to `r max(clabsi_bycountry$countrclabsiinc)` in `r clabsi_bycountry$ReportingCountry[clabsi_bycountry$countrclabsiinc==max(clabsi_bycountry$countrclabsiinc)]` (Table 5). 
 
-```{r, echo=FALSE}
-kable(cvcasbsitable,format = "html")
+```{r, echo=FALSE, results='asis'}
+make_report_table(cvcasbsitable, caption = "CVC-associated BSI table")
 ```
 
 The most frequently isolated microorganisms in bloodstream infection episodes were  `r BSItable_group_top10_pc$Isolate[1]`   followed by `r BSItable_group_top10_pc$Isolate[2]`, `r BSItable_group_top10_pc$Isolate[3]` and `r BSItable_group_top10_pc$Isolate[4]` (Table 6).
 
 
-`r kable(BSItable_group_top10_pc,format='html')`
+`r make_report_table(BSItable_group_top10_pc, caption = 'Top microorganisms in bloodstream infection episodes')`
 
 ```{r, echo=FALSE, results='hide'}
 haiicuall2<-haiicuall2%>%filter(!ReportingCountry%in%c("DE","FR"))
@@ -151,14 +171,14 @@ haiicuall2<-haiicuall2%>%filter(!ReportingCountry%in%c("DE","FR"))
 ## ICU-acquired urinary tract infections
 A total of `r sum(grepl("UTI",haiicu_pt_inf_all$InfectionSite))` cases of ICU-acquired urinary infection were reported. On average, ICU-acquired urinary infections occurred in `r round(sum(grepl("UTI",haiicu_pt_uti$InfectionSite))/sum(!haiicu_pt_uti$dupl_pat)*100,digits=2)`% of patients staying in an ICU for more than two days,  with `r round(sum(haiicu_pt_uti$InvasiveDevice=="Y" & grepl("^UTI",haiicu_pt_uti$InfectionSite))/sum(grepl("^UTI",haiicu_pt_uti$InfectionSite) & haiicu_pt_uti$UrinaryCatheter!="Unk"),digits=3)*100`% of UTI episodes being associated with the use of a urinary catheter. The mean incidence density per ICU was `r round((mean(haiicuall2$UTI_incdens,na.rm=TRUE)),digits=2)` urinary tract infection episodes per 1 000 patient-days (ICU IQR: `r quantile(haiicuall2$UTI_incdens,c(.25),na.rm=TRUE)`-`r round(quantile(haiicuall2$UTI_incdens,c(.75),na.rm=TRUE),digits=2)`)(Table 7). On average, urinary catheters were used in `r round(mean(haiicu_unit_expuc$unitexpdays,na.rm=TRUE)/mean(as.numeric(haiicu_unit_expuc$NumPatDaysUnit2d),na.rm=TRUE)*100,digits=0)`% of the patient-days. The mean device-adjusted rate in patients staying in an ICU for more than two days was `r round(mean(haiicu_unit_expuc$utidevadj,na.rm=TRUE),digits=2)` catheter-associated urinary tract infection episodes per 1 000 catheter-days (ICU IQR: `r quantile(haiicu_unit_expuc$utidevadj,c(.25),na.rm=TRUE)`-`r quantile(haiicu_unit_expuc$utidevadj,c(.75),na.rm=TRUE)`)
 
-```{r, echo=FALSE}
-kable(UTIinc_country,format = "html")
-kable(UTIinc_EU,format = "html")
+```{r, echo=FALSE, results='asis'}
+make_report_table(UTIinc_country, caption = "UTI incidence by country")
+make_report_table(UTIinc_EU, caption = "UTI incidence in the EU")
 ```
 
 The most frequently isolated microorganisms in urinary tract infection episodes were  `r UTItable_group_top10_pc$Isolate[1]`   followed by `r UTItable_group_top10_pc$Isolate[2]`, `r UTItable_group_top10_pc$Isolate[3]` and `r UTItable_group_top10_pc$Isolate[4]` (Table 8).
 
-`r kable(UTItable_group_top10_pc,format='html')`
+`r make_report_table(UTItable_group_top10_pc, caption = 'Top microorganisms in urinary tract infection episodes')`
 
 
 ## Antimicrobial resistance
@@ -166,22 +186,33 @@ The most frequently isolated microorganisms in urinary tract infection episodes 
 
 
 ##Annex 2
-`r kable(country_unit_table,format='html')`
 
-`r kable(country_demogr,format='html')`
+## Table A2. ICU characteristics 
+`r make_report_table(country_unit_table, caption = 'Table A2. ICU characteristics')`
 
-`r kable(prbsi_table,format='html')`
+## Table A3. Patient demographics
+`r make_report_table(country_demogr, caption = 'Table A3. Patient demographics')`
 
-`r kable(cri3table,format='html')`
+## Table A4. Primary BSI by country
+`r make_report_table(prbsi_table, caption = 'Table A4. Primary BSI by country')`
 
-`r kable(bsidevadj_totcritable_bycountry,format='html')`
+## Table A5. CRBSI by country
+`r make_report_table(cri3table, caption = 'Table A5. CRBSI by country')`
 
-`r kable(country_ab_table,format='html')`
+## Table A6. CVC-associated BSI by country
+`r make_report_table(bsidevadj_totcritable_bycountry, caption = 'Table A6. CVC-associated BSI by country')`
 
-`r kable(country_ab_ind,format='html')`
+## Table 9. Antimicrobial use selected antimicrobial groups, by country
+`r make_report_table(country_ab_table, caption = 'Table 9. Antimicrobial use selected antimicrobial groups, by country')`
 
-`r kable(InfOutc,format='html')`
+## Table 9. Antimicrobial use indication, by country
+`r make_report_table(country_ab_ind, caption = 'Table 9. Antimicrobial use indication, by country')`
 
-`r kable(country_deno_7d,format='html')`
+## Table 10. Healthcare-associated infection outcome by country
+`r make_report_table(InfOutc, caption = 'Table 10. Healthcare-associated infection outcome by country')`
 
-`r kable(country_ind,format='html')`
+## Table 11. Structure and process indicators for infection prevention and control in intensive care units 
+`r make_report_table(country_deno_7d, caption = 'Table 11. Structure and process indicators for infection prevention and control in intensive care units')`
+
+## Table 12. Process indicators assessed through chart review
+`r make_report_table(country_ind, caption = 'Table 12. Process indicators assessed through chart review')`
