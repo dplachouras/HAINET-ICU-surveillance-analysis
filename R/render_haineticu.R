@@ -23,17 +23,34 @@ if (is.na(output_format)) {
 }
 
 year <- Sys.getenv("HAINET_YEAR", unset = "2023")
-out_dir <- here("reports", "html_AER")
+out_dir <- normalizePath(here("reports", "html_AER"), winslash = "/", mustWork = FALSE)
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
 output_ext <- if (output_format == "word_document") "docx" else "html"
 output_file <- paste0(year, "_HAIICU_Report.", output_ext)
+target_path <- file.path(out_dir, output_file)
+tmp_dir <- tempdir()
+tmp_output_path <- file.path(tmp_dir, output_file)
+
+if (file.exists(tmp_output_path)) {
+  file.remove(tmp_output_path)
+}
+
+if (file.exists(target_path)) {
+  file.remove(target_path)
+}
 
 render(
   input = here("R", "haineticuReport.Rmd"),
-  output_dir = out_dir,
+  output_dir = tmp_dir,
   output_format = output_format,
   output_file = output_file,
-  encoding = "UTF-8"
+  encoding = "UTF-8",
+  clean = TRUE,
+  intermediates_dir = tmp_dir
 )
+
+if (file.exists(tmp_output_path)) {
+  file.copy(tmp_output_path, target_path, overwrite = TRUE)
+}
 
