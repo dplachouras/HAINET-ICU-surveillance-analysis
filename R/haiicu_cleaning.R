@@ -469,6 +469,24 @@ IAPtable<-summarise(by_country,n_IAP=sum(IAP,na.rm=TRUE),
                     iapratemedian=round(median(iapincintubdays,na.rm=TRUE),digits=2),
                     iaprate75pct=round(quantile(iapincintubdays,probs=c(0.75),na.rm=TRUE),digits=2))
 #IAPtable<-bind_rows(IAPtable,eu_iap) #under development
+IAPtable <- IAPtable %>%
+  dplyr::bind_rows(
+    tibble::tibble(
+      ReportingCountry = "EU/EEA",
+      n_IAP = sum(haiicudenscountr$IAP, na.rm = TRUE),
+      n_expdays = sum(as.numeric(haiicudenscountr$expdays), na.rm = TRUE),
+      intubuse = round(mean(as.numeric(haiicudenscountr$intubuse), na.rm = TRUE), digits = 2),
+      aggr_inc = round(
+        1000 * sum(haiicudenscountr$IAP, na.rm = TRUE) /
+          sum(as.numeric(haiicudenscountr$expdays), na.rm = TRUE),
+        digits = 2
+      ),
+      avgiaprate = round(mean(haiicudenscountr$iapincintubdays, na.rm = TRUE), digits = 2),
+      iaprate25pct = round(quantile(haiicudenscountr$iapincintubdays, probs = 0.25, na.rm = TRUE), digits = 2),
+      iapratemedian = round(median(haiicudenscountr$iapincintubdays, na.rm = TRUE), digits = 2),
+      iaprate75pct = round(quantile(haiicudenscountr$iapincintubdays, probs = 0.75, na.rm = TRUE), digits = 2)
+    )
+  )
 
 save_output_rds(IAPtable,file="IAPtable.Rda")
 save_output_rds(eu_iap,file="eu_iap.Rda")
@@ -547,26 +565,26 @@ PNtable_group_top10<-top_n(PNtable_group_sum,n=10,total)
 PNtable_group_top10<-PNtable_group_top10[order(-PNtable_group_top10$total),]
 
 PNtable_group_top10<-mutate(PNtable_group_top10,ATpc=100*round(AT/sum(AT,na.rm=TRUE),digits=3))
-PNtable_group_top10<-mutate(PNtable_group_top10,BEpc=100*round(BE/sum(BE,na.rm=TRUE),digits=3))
+#PNtable_group_top10<-mutate(PNtable_group_top10,BEpc=100*round(BE/sum(BE,na.rm=TRUE),digits=3))
 
 PNtable_group_top10<-mutate(PNtable_group_top10,EEpc=100*round(EE/sum(EE,na.rm=TRUE),digits=3))
 
 PNtable_group_top10<-mutate(PNtable_group_top10,FRpc=100*round(FR/sum(FR,na.rm=TRUE),digits=3))
 PNtable_group_top10<-mutate(PNtable_group_top10,DEpc=100*round(DE/sum(DE,na.rm=TRUE),digits=3))
-PNtable_group_top10<-mutate(PNtable_group_top10,HUpc=100*round(HU/sum(HU,na.rm=TRUE),digits=3))
-PNtable_group_top10<-mutate(PNtable_group_top10,ITpc=100*round(IT/sum(IT,na.rm=TRUE),digits=3))
+#PNtable_group_top10<-mutate(PNtable_group_top10,HUpc=100*round(HU/sum(HU,na.rm=TRUE),digits=3))
+#PNtable_group_top10<-mutate(PNtable_group_top10,ITpc=100*round(IT/sum(IT,na.rm=TRUE),digits=3))
 
 PNtable_group_top10<-mutate(PNtable_group_top10,ITGiViTIpc=100*round(eval(as.symbol("IT-GiViTI"))/sum(eval(as.symbol("IT-GiViTI")),na.rm=TRUE),digits=3))
 PNtable_group_top10<-mutate(PNtable_group_top10,ITSPINUTIpc=100*round(eval(as.symbol("IT-SPIN-UTI"))/sum(eval(as.symbol("IT-SPIN-UTI")),na.rm=TRUE),digits=3))
 PNtable_group_top10<-mutate(PNtable_group_top10,LTpc=100*round(LT/sum(LT,na.rm=TRUE),digits=3))
 PNtable_group_top10<-mutate(PNtable_group_top10,LUpc=100*round(LU/sum(LU,na.rm=TRUE),digits=3))
-PNtable_group_top10<-mutate(PNtable_group_top10,MTpc=100*round(MT/sum(LU,na.rm=TRUE),digits=3))
+#PNtable_group_top10<-mutate(PNtable_group_top10,MTpc=100*round(MT/sum(MT,na.rm=TRUE),digits=3))
 PNtable_group_top10<-mutate(PNtable_group_top10,PTpc=100*round(PT/sum(PT,na.rm=TRUE),digits=3))
-PNtable_group_top10<-mutate(PNtable_group_top10,ROpc=100*round(RO/sum(RO,na.rm=TRUE),digits=3))
+#PNtable_group_top10<-mutate(PNtable_group_top10,ROpc=100*round(RO/sum(RO,na.rm=TRUE),digits=3))
 PNtable_group_top10<-mutate(PNtable_group_top10,ESpc=100*round(ES/sum(ES,na.rm=TRUE),digits=3))
 PNtable_group_top10<-mutate(PNtable_group_top10,SKpc=100*round(SK/sum(SK,na.rm=TRUE),digits=3))
-PNtable_group_top10<-mutate(PNtable_group_top10,UKpc=100*round(UK/sum(UK,na.rm=TRUE),digits=3))
-PNtable_group_top10<-mutate(PNtable_group_top10,PLpc=100*round(PL/sum(PL,na.rm=TRUE),digits=3))
+#PNtable_group_top10<-mutate(PNtable_group_top10,UKpc=100*round(UK/sum(UK,na.rm=TRUE),digits=3))
+#PNtable_group_top10<-mutate(PNtable_group_top10,PLpc=100*round(PL/sum(PL,na.rm=TRUE),digits=3))
 PNtable_group_top10<-mutate(PNtable_group_top10,totalpc=100*round(total/sum(total,na.rm=TRUE),digits=3))
 
 
@@ -795,6 +813,21 @@ bsidevadj_cvcasbsitable_bycountry<-haiicu_unit_bsidevadj_clabsitable%>%group_by(
                                                                                                             clabsiratemedian=round(median(clabsiinc,na.rm=TRUE),digits=2),
                                                                                                             clabsirate75pct=round(quantile(clabsiinc,probs=c(0.75),na.rm=TRUE),digits=2))
 
+bsidevadj_cvcasbsitable_bycountry <- bsidevadj_cvcasbsitable_bycountry %>%
+  dplyr::bind_rows(
+    tibble::tibble(
+      ReportingCountry = "EU/EEA",
+      n_cvcdays = sum(haiicu_unit_bsidevadj_clabsitable$unitexpdays, na.rm = TRUE),
+      cvcuse = round(1000 * mean(haiicu_unit_bsidevadj_clabsitable$unitexpdays, na.rm = TRUE) / mean(as.numeric(haiicu_unit_bsidevadj_clabsitable$lengthofstay), na.rm = TRUE), digits = 0),
+      n_clabsi = sum(haiicu_unit_bsidevadj_clabsitable$CVCASBSI, na.rm = TRUE),
+      aggrinc = round(1000 * sum(haiicu_unit_bsidevadj_clabsitable$CVCASBSI, na.rm = TRUE) / sum(haiicu_unit_bsidevadj_clabsitable$unitexpdays, na.rm = TRUE), digits = 2),
+      avgclabsirate = round(mean(haiicu_unit_bsidevadj_clabsitable$clabsiinc, na.rm = TRUE), digits = 2),
+      clabsirate25pct = round(quantile(haiicu_unit_bsidevadj_clabsitable$clabsiinc, probs = 0.25, na.rm = TRUE), digits = 2),
+      clabsiratemedian = round(median(haiicu_unit_bsidevadj_clabsitable$clabsiinc, na.rm = TRUE), digits = 2),
+      clabsirate75pct = round(quantile(haiicu_unit_bsidevadj_clabsitable$clabsiinc, probs = 0.75, na.rm = TRUE), digits = 2)
+    )
+  )
+
 save_output_rds(bsidevadj_cvcasbsitable_bycountry,"cvcasbsitable.Rda")
 save_output_rds(eu_cvcasbsi,"eu_cvcasbsi.Rda")
 
@@ -888,15 +921,15 @@ BSItable_group_top10<-top_n(BSItable_group_sum,n=10,total)
 BSItable_group_top10<-BSItable_group_top10[order(-BSItable_group_top10$total),]
 
 BSItable_group_top10<-mutate(BSItable_group_top10,ATpc=100*round(AT/sum(AT,na.rm=TRUE),digits=3))
-BSItable_group_top10<-mutate(BSItable_group_top10,BEpc=100*round(BE/sum(BE,na.rm=TRUE),digits=3))
-BSItable_group_top10<-mutate(BSItable_group_top10,CZpc=100*round(CZ/sum(CZ,na.rm=TRUE),digits=3))
+#BSItable_group_top10<-mutate(BSItable_group_top10,BEpc=100*round(BE/sum(BE,na.rm=TRUE),digits=3))
+#BSItable_group_top10<-mutate(BSItable_group_top10,CZpc=100*round(CZ/sum(CZ,na.rm=TRUE),digits=3))
 BSItable_group_top10<-mutate(BSItable_group_top10,EEpc=100*round(EE/sum(EE,na.rm=TRUE),digits=3))
 
 
 BSItable_group_top10<-mutate(BSItable_group_top10,FRpc=100*round(FR/sum(FR,na.rm=TRUE),digits=3))
 BSItable_group_top10<-mutate(BSItable_group_top10,DEpc=100*round(DE/sum(DE,na.rm=TRUE),digits=3))
-BSItable_group_top10<-mutate(BSItable_group_top10,HUpc=100*round(HU/sum(HU,na.rm=TRUE),digits=3))
-BSItable_group_top10<-mutate(BSItable_group_top10,ITpc=100*round(IT/sum(IT,na.rm=TRUE),digits=3))
+#BSItable_group_top10<-mutate(BSItable_group_top10,HUpc=100*round(HU/sum(HU,na.rm=TRUE),digits=3))
+#BSItable_group_top10<-mutate(BSItable_group_top10,ITpc=100*round(IT/sum(IT,na.rm=TRUE),digits=3))
 BSItable_group_top10<-mutate(BSItable_group_top10,ITSPINUTIpc=100*round(eval(as.symbol("IT-SPIN-UTI"))/sum(eval(as.symbol("IT-SPIN-UTI")),na.rm=TRUE),digits=3))
 BSItable_group_top10<-mutate(BSItable_group_top10,ITGiViTIpc=100*round(eval(as.symbol("IT-GiViTI"))/sum(eval(as.symbol("IT-GiViTI")),na.rm=TRUE),digits=3))
 
@@ -904,11 +937,11 @@ BSItable_group_top10<-mutate(BSItable_group_top10,LTpc=100*round(LT/sum(LT,na.rm
 BSItable_group_top10<-mutate(BSItable_group_top10,LUpc=100*round(LU/sum(LU,na.rm=TRUE),digits=3))
 BSItable_group_top10<-mutate(BSItable_group_top10,MTpc=100*round(MT/sum(MT,na.rm=TRUE),digits=3))
 BSItable_group_top10<-mutate(BSItable_group_top10,PTpc=100*round(PT/sum(PT,na.rm=TRUE),digits=3))
-BSItable_group_top10<-mutate(BSItable_group_top10,ROpc=100*round(RO/sum(RO,na.rm=TRUE),digits=3))
+#BSItable_group_top10<-mutate(BSItable_group_top10,ROpc=100*round(RO/sum(RO,na.rm=TRUE),digits=3))
 BSItable_group_top10<-mutate(BSItable_group_top10,SKpc=100*round(SK/sum(SK,na.rm=TRUE),digits=3))
 BSItable_group_top10<-mutate(BSItable_group_top10,PLpc=100*round(PL/sum(PL,na.rm=TRUE),digits=3))
 BSItable_group_top10<-mutate(BSItable_group_top10,ESpc=100*round(ES/sum(ES,na.rm=TRUE),digits=3))
-BSItable_group_top10<-mutate(BSItable_group_top10,UKpc=100*round(UK/sum(UK,na.rm=TRUE),digits=3))
+#BSItable_group_top10<-mutate(BSItable_group_top10,UKpc=100*round(UK/sum(UK,na.rm=TRUE),digits=3))
 BSItable_group_top10<-mutate(BSItable_group_top10,totalpc=100*round(total/sum(total,na.rm=TRUE),digits=3))
 
 bsi_out <- build_top10_country_tables(BSItable_group_top10)
@@ -1053,24 +1086,24 @@ UTItable_group_top10<-top_n(UTItable_group_sum,n=10,total)
 UTItable_group_top10<-UTItable_group_top10[order(-UTItable_group_top10$total),]
 
 UTItable_group_top10<-mutate(UTItable_group_top10,ATpc=100*round(AT/sum(AT,na.rm=TRUE),digits=3))
-UTItable_group_top10<-mutate(UTItable_group_top10,BEpc=100*round(BE/sum(BE,na.rm=TRUE),digits=3))
+#UTItable_group_top10<-mutate(UTItable_group_top10,BEpc=100*round(BE/sum(BE,na.rm=TRUE),digits=3))
 UTItable_group_top10<-mutate(UTItable_group_top10,EEpc=100*round(EE/sum(EE,na.rm=TRUE),digits=3))
 
 UTItable_group_top10<-mutate(UTItable_group_top10,FRpc=100*round(FR/sum(FR,na.rm=TRUE),digits=3))
 UTItable_group_top10<-mutate(UTItable_group_top10,DEpc=100*round(DE/sum(DE,na.rm=TRUE),digits=3))
 UTItable_group_top10<-mutate(UTItable_group_top10,HUpc=100*round(HU/sum(HU,na.rm=TRUE),digits=3))
-UTItable_group_top10<-mutate(UTItable_group_top10,ITpc=100*round(IT/sum(IT,na.rm=TRUE),digits=3))
+#UTItable_group_top10<-mutate(UTItable_group_top10,ITpc=100*round(IT/sum(IT,na.rm=TRUE),digits=3))
 UTItable_group_top10<-mutate(UTItable_group_top10,ITSPINUTIpc=100*round(eval(as.symbol("IT-SPIN-UTI"))/sum(eval(as.symbol("IT-SPIN-UTI")),na.rm=TRUE),digits=3))
 UTItable_group_top10<-mutate(UTItable_group_top10,ITGiViTIpc=100*round(eval(as.symbol("IT-GiViTI"))/sum(eval(as.symbol("IT-GiViTI")),na.rm=TRUE),digits=3))
 UTItable_group_top10<-mutate(UTItable_group_top10,LTpc=100*round(LT/sum(LT,na.rm=TRUE),digits=3))
 UTItable_group_top10<-mutate(UTItable_group_top10,LUpc=100*round(LU/sum(LU,na.rm=TRUE),digits=3))
 UTItable_group_top10<-mutate(UTItable_group_top10,PTpc=100*round(PT/sum(PT,na.rm=TRUE),digits=3))
-UTItable_group_top10<-mutate(UTItable_group_top10,ROpc=100*round(RO/sum(RO,na.rm=TRUE),digits=3))
+#UTItable_group_top10<-mutate(UTItable_group_top10,ROpc=100*round(RO/sum(RO,na.rm=TRUE),digits=3))
 UTItable_group_top10<-mutate(UTItable_group_top10,SKpc=100*round(SK/sum(SK,na.rm=TRUE),digits=3))
 UTItable_group_top10<-mutate(UTItable_group_top10,ESpc=100*round(ES/sum(ES,na.rm=TRUE),digits=3))
-UTItable_group_top10<-mutate(UTItable_group_top10,UKpc=100*round(UK/sum(UK,na.rm=TRUE),digits=3))
+#UTItable_group_top10<-mutate(UTItable_group_top10,UKpc=100*round(UK/sum(UK,na.rm=TRUE),digits=3))
 UTItable_group_top10<-mutate(UTItable_group_top10,MTpc=100*round(MT/sum(MT,na.rm=TRUE),digits=3))
-UTItable_group_top10<-mutate(UTItable_group_top10,PLpc=100*round(PL/sum(PL,na.rm=TRUE),digits=3))
+#UTItable_group_top10<-mutate(UTItable_group_top10,PLpc=100*round(PL/sum(PL,na.rm=TRUE),digits=3))
 UTItable_group_top10<-mutate(UTItable_group_top10,totalpc=100*round(total/sum(total,na.rm=TRUE),digits=3))
 
 
