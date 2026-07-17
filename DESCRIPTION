@@ -1,0 +1,43 @@
+Package: HAINETICU
+Type: Package
+Title: HAI-Net ICU Surveillance Annual Report Workflow
+Version: 0.0.0.9000
+Authors@R: c(
+    person(given = "HAI-Net ICU surveillance analysis contributors",
+           role = c("aut", "cre"))
+  )
+Description: Workflow for producing the annual ECDC HAI-Net ICU
+    epidemiological report for healthcare-associated infections acquired in
+    intensive care units in Europe. The repository cleans annual TESSy HAIICU
+    exports, creates year-scoped analytical outputs, and renders R Markdown and
+    Quarto report surfaces.
+License: Not specified
+Encoding: UTF-8
+LazyData: true
+Imports:
+    caret (>= 7.0.1),
+    data.table (>= 1.18.4),
+    DBI (>= 1.3.0),
+    dplyr (>= 1.2.1),
+    flextable (>= 0.10.0),
+    ggplot2 (>= 3.5.2),
+    gt (>= 1.3.0),
+    haidatamanager (>= 0.3.1),
+    here (>= 1.0.2),
+    knitr (>= 1.50),
+    odbc (>= 1.7.0),
+    pROC (>= 1.18.5),
+    remotes (>= 2.5.0),
+    rmarkdown (>= 2.29),
+    rnaturalearth (>= 1.2.0),
+    rnaturalearthdata (>= 1.0.0),
+    rprojroot (>= 2.1.1),
+    scales (>= 1.4.0),
+    sf (>= 1.1.0),
+    SHAPforxgboost (>= 0.1.3),
+    tibble (>= 3.3.1),
+    tidyr (>= 1.3.1),
+    XLConnect (>= 1.2.2),
+    xgboost (>= 1.7.11.1)
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
