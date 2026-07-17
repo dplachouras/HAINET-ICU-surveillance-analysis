@@ -468,7 +468,7 @@ IAPtable<-summarise(by_country,n_IAP=sum(IAP,na.rm=TRUE),
                     iaprate25pct=round(quantile(iapincintubdays,probs=c(0.25),na.rm=TRUE),digits=2),
                     iapratemedian=round(median(iapincintubdays,na.rm=TRUE),digits=2),
                     iaprate75pct=round(quantile(iapincintubdays,probs=c(0.75),na.rm=TRUE),digits=2))
-#IAPtable<-bind_rows(IAPtable,eu_iap) #under development
+#IAPtable<-bind_rows(IAPtable,eu_iap)
 IAPtable <- IAPtable %>%
   dplyr::bind_rows(
     tibble::tibble(

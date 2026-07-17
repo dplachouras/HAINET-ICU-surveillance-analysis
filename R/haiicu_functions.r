@@ -95,7 +95,7 @@ build_top10_country_tables <- function(df,
   names(pc_tbl) <- c(
     isolate_col,
     display_names,
-    if (totalpc_col %in% names(pc_tbl)) "total"
+    if (totalpc_col %in% names(pc_tbl)) "Total"
   )
 
   list(
