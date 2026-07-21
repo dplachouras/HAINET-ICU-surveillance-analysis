@@ -3,9 +3,10 @@ Type: Package
 Title: HAI-Net ICU Surveillance Annual Report Workflow
 Version: 0.0.0.9000
 Authors@R: c(
-    person(given = "HAI-Net ICU surveillance analysis contributors",
-           role = c("aut", "cre"))
-  )
+        person(given = "HAI-Net ICU surveillance analysis contributors",
+                     email = "HAI-Net@ecdc.europa.eu",
+                     role = c("aut", "cre"))
+    )
 Description: Workflow for producing the annual ECDC HAI-Net ICU
     epidemiological report for healthcare-associated infections acquired in
     intensive care units in Europe. The repository cleans annual TESSy HAIICU
@@ -14,6 +15,8 @@ Description: Workflow for producing the annual ECDC HAI-Net ICU
 License: Not specified
 Encoding: UTF-8
 LazyData: true
+Depends:
+    R (>= 4.1.0)
 Imports:
     caret (>= 7.0.1),
     data.table (>= 1.18.4),
@@ -28,6 +31,7 @@ Imports:
     odbc (>= 1.7.0),
     pROC (>= 1.18.5),
     remotes (>= 2.5.0),
+    rlang (>= 1.1.0),
     rmarkdown (>= 2.29),
     rnaturalearth (>= 1.2.0),
     rnaturalearthdata (>= 1.0.0),
@@ -39,5 +43,10 @@ Imports:
     tidyr (>= 1.3.1),
     XLConnect (>= 1.2.2),
     xgboost (>= 1.7.11.1)
+Suggests:
+    devtools,
+    testthat (>= 3.0.0),
+    withr (>= 3.0.0)
+Config/testthat/edition: 3
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3

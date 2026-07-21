@@ -4,3 +4,14 @@ reports/_site/
 reports/.quarto/
 reports/**/.quarto/
 reports/**/*.quarto_ipynb
+*.Rcheck/
+*.Rout
+*.Rout.fail
+out.txt
+output.txt
+output.log
+step*.log
+package-check*.out
+package-check*.err
+workflow-test*.out
+workflow-test*.err
