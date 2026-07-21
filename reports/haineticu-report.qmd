@@ -1,0 +1,231 @@
+---
+title: "HAI-Net ICU Annual Report"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+  docx: default
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r}
+#| label: setup
+#| include: false
+
+if (requireNamespace("devtools", quietly = TRUE)) {
+  devtools::load_all(quiet = TRUE)
+}
+
+report_data <- prepare_report_data()
+report_tables <- hicu_prepare_report_tables(report_data)
+report_summaries <- hicu_prepare_report_summaries(report_data)
+```
+
+## Participation Overview
+
+In `r report_data$year`, `r report_summaries$participation$country_count` countries reported data from `r report_summaries$participation$hospital_count` hospitals and `r report_summaries$participation$icu_count` ICUs. ICU characteristics are shown in @tbl-icu-characteristics.
+
+The median size of participating ICUs was `r report_summaries$participation$unit_size_median` beds, ranging from `r report_summaries$participation$unit_size_min` to `r report_summaries$participation$unit_size_max` beds.
+
+Of `r report_summaries$participation$patient_count` patients staying in an ICU for more than two days, `r report_summaries$participation$patients_with_hai` patients (`r report_summaries$participation$patients_with_hai_percent`%) presented with at least one healthcare-associated infection.
+
+## ICU Characteristics
+
+```{r}
+#| label: tbl-icu-characteristics
+#| tbl-cap: "ICU characteristics by country/network"
+
+knitr::kable(report_tables$icu_characteristics)
+```
+
+## Patient Demographics
+
+```{r}
+#| label: tbl-patient-demographics
+#| tbl-cap: "Patient demographics by country/network"
+
+knitr::kable(report_tables$patient_demographics)
+```
+
+## Infection Outcomes
+
+```{r}
+#| label: tbl-infection-outcomes
+#| tbl-cap: "Infection outcomes by country/network"
+
+knitr::kable(report_tables$infection_outcomes)
+```
+
+## ICU-Acquired Pneumonia
+
+Of `r report_summaries$pneumonia$cases` pneumonia episodes reported, `r report_summaries$pneumonia$intubation_associated_percent`% were associated with intubation. Among patients staying in an ICU for more than two days, `r report_summaries$pneumonia$patient_percent`% were affected by at least one pneumonia episode.
+
+The incidence of pneumonia was `r report_summaries$pneumonia$incidence` episodes per 1 000 patient-days. Country/network incidence is shown in @tbl-pn-incidence and intubation-associated pneumonia in @tbl-iap.
+
+```{r}
+#| label: tbl-pn-incidence
+#| tbl-cap: "Pneumonia incidence by country/network"
+
+knitr::kable(report_tables$pn_incidence)
+```
+
+```{r}
+#| label: tbl-iap
+#| tbl-cap: "Intubation-associated pneumonia by country/network"
+
+knitr::kable(report_tables$iap)
+```
+
+The most frequently isolated microorganisms in ICU-acquired pneumonia episodes were `r report_summaries$pneumonia$top_isolates_text`. The full microorganism distribution is shown in @tbl-pn-microorganisms.
+
+```{r}
+#| label: tbl-pn-microorganisms
+#| tbl-cap: "Most frequently isolated microorganisms in pneumonia episodes"
+
+knitr::kable(report_tables$pn_microorganisms)
+```
+
+## ICU-Acquired Bloodstream Infections
+
+A total of `r report_summaries$bloodstream$cases` ICU-acquired bloodstream infection episodes were reported. On average, bloodstream infections occurred in `r report_summaries$bloodstream$patient_percent`% of patients staying in an ICU for more than two days.
+
+The mean incidence density per ICU was `r report_summaries$bloodstream$mean_icu_incidence` bloodstream infection episodes per 1 000 patient-days. Country/network incidence is shown in @tbl-bsi-incidence, with primary BSI, CRI3, and CVC-associated BSI details in @tbl-prbsi, @tbl-cri3, and @tbl-cvc-associated-bsi.
+
+```{r}
+#| label: tbl-bsi-incidence
+#| tbl-cap: "Bloodstream infection incidence by country/network"
+
+knitr::kable(report_tables$bsi_incidence)
+```
+
+```{r}
+#| label: tbl-prbsi
+#| tbl-cap: "Primary bloodstream infection incidence by country/network"
+
+knitr::kable(report_tables$prbsi)
+```
+
+```{r}
+#| label: tbl-cri3
+#| tbl-cap: "CRI3 incidence by country/network"
+
+knitr::kable(report_tables$cri3)
+```
+
+```{r}
+#| label: tbl-cvc-associated-bsi
+#| tbl-cap: "CVC-associated bloodstream infection by country/network"
+
+knitr::kable(report_tables$cvc_associated_bsi)
+```
+
+Additional catheter-related and CVC-associated bloodstream infection summaries are shown in @tbl-catheter-related-bsi, @tbl-total-crbsi, @tbl-eu-cvc-associated-bsi, and @tbl-clabsi-by-country.
+
+```{r}
+#| label: tbl-catheter-related-bsi
+#| tbl-cap: "Catheter-related bloodstream infection by country/network"
+
+knitr::kable(report_tables$catheter_related_bsi)
+```
+
+```{r}
+#| label: tbl-total-crbsi
+#| tbl-cap: "Total catheter-related bloodstream infection by country/network"
+
+knitr::kable(report_tables$total_crbsi)
+```
+
+```{r}
+#| label: tbl-eu-cvc-associated-bsi
+#| tbl-cap: "EU/EEA CVC-associated bloodstream infection summary"
+
+knitr::kable(report_tables$eu_cvc_associated_bsi)
+```
+
+```{r}
+#| label: tbl-clabsi-by-country
+#| tbl-cap: "CLABSI incidence by country/network"
+
+knitr::kable(report_tables$clabsi_by_country)
+```
+
+The most frequently isolated microorganisms in bloodstream infection episodes were `r report_summaries$bloodstream$top_isolates_text`. The full microorganism distribution is shown in @tbl-bsi-microorganisms.
+
+```{r}
+#| label: tbl-bsi-microorganisms
+#| tbl-cap: "Most frequently isolated microorganisms in bloodstream infection episodes"
+
+knitr::kable(report_tables$bsi_microorganisms)
+```
+
+## ICU-Acquired Urinary Tract Infections
+
+A total of `r report_summaries$urinary_tract$cases` ICU-acquired urinary tract infection episodes were reported. On average, urinary tract infections occurred in `r report_summaries$urinary_tract$patient_percent`% of patients staying in an ICU for more than two days.
+
+The mean incidence density per ICU was `r report_summaries$urinary_tract$mean_icu_incidence` urinary tract infection episodes per 1 000 patient-days. Country/network incidence is shown in @tbl-uti-incidence.
+
+```{r}
+#| label: tbl-uti-incidence
+#| tbl-cap: "Urinary tract infection incidence by country/network"
+
+knitr::kable(report_tables$uti_incidence)
+```
+
+The most frequently isolated microorganisms in urinary tract infection episodes were `r report_summaries$urinary_tract$top_isolates_text`. The full microorganism distribution is shown in @tbl-uti-microorganisms.
+
+```{r}
+#| label: tbl-uti-microorganisms
+#| tbl-cap: "Most frequently isolated microorganisms in urinary tract infection episodes"
+
+knitr::kable(report_tables$uti_microorganisms)
+```
+
+## Antimicrobial Resistance
+
+Reported percentages of resistant isolates in selected bacteria associated with ICU-acquired infections cover `r report_summaries$antimicrobial_resistance$indicator_count` indicators, including `r report_summaries$antimicrobial_resistance$indicator_text`. Country/network results are shown in @tbl-antimicrobial-resistance.
+
+```{r}
+#| label: tbl-antimicrobial-resistance
+#| tbl-cap: "Antimicrobial resistance indicators by country/network"
+
+knitr::kable(report_tables$antimicrobial_resistance)
+```
+
+## Antimicrobial Use
+
+Antimicrobial use summaries by selected antimicrobial group and indication are shown in @tbl-antimicrobial-groups and @tbl-antimicrobial-indications.
+
+```{r}
+#| label: tbl-antimicrobial-groups
+#| tbl-cap: "Antimicrobial use by selected antimicrobial group and country/network"
+
+knitr::kable(report_tables$antimicrobial_groups)
+```
+
+```{r}
+#| label: tbl-antimicrobial-indications
+#| tbl-cap: "Antimicrobial use indication by country/network"
+
+knitr::kable(report_tables$antimicrobial_indications)
+```
+
+## Structure And Process Indicators
+
+Structure and process indicators for infection prevention and control in intensive care units are shown in @tbl-structure-indicators and @tbl-process-indicators.
+
+```{r}
+#| label: tbl-structure-indicators
+#| tbl-cap: "Structure and process indicators for infection prevention and control in intensive care units"
+
+knitr::kable(report_tables$structure_indicators)
+```
+
+```{r}
+#| label: tbl-process-indicators
+#| tbl-cap: "Process indicators assessed through chart review"
+
+knitr::kable(report_tables$process_indicators)
+```
