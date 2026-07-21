@@ -5,10 +5,10 @@ library(data.table)
 library(here)
 
 
-source(here("R", "haiicu_functions.r")) 
+source(here::here("R", "haiicu_functions.r")) 
 year <- Sys.getenv("HAINET_YEAR", unset = "2023")
-DATA_DIR <- here("data", "raw", year)
-OUTPUT_DIR <- here("outputs", year)
+DATA_DIR <- here::here("data", "raw", year)
+OUTPUT_DIR <- here::here("outputs", year)
 dir.create(OUTPUT_DIR, recursive = TRUE, showWarnings = FALSE)
 
 #variable check
