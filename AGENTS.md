@@ -9,7 +9,7 @@ This repository supports the annual ECDC HAI-Net ICU surveillance workflow for h
 1. Download or place annual TESSy HAIICU CSV exports in `data/raw/<year>/`.
 2. Clean and analyse the annual data with `R/haiicu_cleaning.R`.
 3. Save derived annual tables and objects to `outputs/<year>/`.
-4. Render the annual epidemiological report from `R/haineticuReport.Rmd` using `R/render_haineticu.R`.
+4. Render the annual epidemiological report from the legacy R Markdown file in `scripts/legacy/haineticuReport.Rmd` or the canonical Quarto report through `render_report()`.
 5. Continue development of the Quarto HTML report under `reports/` as a separate, newer reporting surface.
 
 The tracked code is the analytical workflow. Raw data, generated outputs, rendered sites, and Quarto build artifacts are intentionally untracked.
@@ -21,8 +21,8 @@ The tracked code is the analytical workflow. Raw data, generated outputs, render
 - `R/data_download.R` downloads HAIICU data through `haidatamanager` into `data/HAIICU/`.
 - `R/haiicu_functions.r` contains shared helpers for percentages, quantiles, mixed date parsing, year-scoped data reads, output reads, output writes, and top-10 microorganism tables.
 - `R/haiicu_cleaning.R` is the main cleaning and analysis script. It reads CSV files from `data/raw/<year>/`, creates annual derived tables, and writes `outputs/<year>/` objects.
-- `R/haineticuReport.Rmd` is the main R Markdown epidemiological report.
-- `R/render_haineticu.R` renders the report to Word or HTML and writes it to `reports/html_AER/`.
+- `scripts/legacy/haineticuReport.Rmd` is the legacy R Markdown epidemiological report.
+- `R/report_render.R` exposes `render_report()` to render the canonical Quarto report to Word or HTML and write it to `reports/html_AER/`.
 - `reports/_quarto.yml` and `reports/Reports/<year>/*.qmd` are the under-development Quarto website report.
 - `reports/R/_report_setup.r`, `_lookups.r`, `_plot_helpers.r`, `_plot_theme.r`, and `_report_metrics.r` are shared helpers for the Quarto report.
 - `data/`, `outputs/`, `reports/_site/`, `.quarto/`, and Quarto notebook artifacts are ignored by git.
@@ -39,8 +39,8 @@ $env:HAINET_YEAR = "2023"
 Rscript R/haiicu_cleaning.R
 
 # Render the annual R Markdown report
-Rscript R/render_haineticu.R word
-Rscript R/render_haineticu.R html
+Rscript -e "devtools::load_all(); render_report(output_format = 'docx')"
+Rscript -e "devtools::load_all(); render_report(output_format = 'html')"
 ```
 
 For Quarto development, use the `reports/` project and verify paths carefully because this report is still under development:
@@ -80,8 +80,8 @@ quarto render reports
 
 ## Report Conventions
 
-- The R Markdown report reads precomputed objects from `outputs/<year>/`; do not duplicate heavy cleaning logic in report text.
-- Use `make_report_table()` in `R/haineticuReport.Rmd` for report tables so Word and HTML output remain compatible.
+- The legacy R Markdown report reads precomputed objects from `outputs/<year>/`; do not duplicate heavy cleaning logic in report text.
+- Use package report table helpers for report tables so Word and HTML output remain compatible.
 - Keep narrative calculations tied to the same saved objects as the tables they describe.
 - The Quarto report uses shared setup and lookup helpers in `reports/R/`; add report-wide table labels, country labels, and styling there rather than repeating them in every `.qmd` page.
 - Keep generated report content reproducible from the saved annual outputs. If a report needs a new indicator, add it to the cleaning pipeline first, then read it in the report.
@@ -95,11 +95,11 @@ $env:HAINET_YEAR = "2023"
 Rscript R/haiicu_cleaning.R
 ```
 
-- For changes to `R/haineticuReport.Rmd`, `R/render_haineticu.R`, or report table helpers, run the narrow render relevant to the change:
+- For changes to `scripts/legacy/haineticuReport.Rmd`, `R/report_render.R`, or report table helpers, run the narrow render relevant to the change:
 
 ```powershell
 $env:HAINET_YEAR = "2023"
-Rscript R/render_haineticu.R html
+Rscript -e "devtools::load_all(); render_report(output_format = 'html')"
 ```
 
 - For changes to `R/haiicu_functions.r`, run a narrow source check when possible:
